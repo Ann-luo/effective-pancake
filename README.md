@@ -8,4 +8,5 @@
 ## 2. VS Code GitHub Copilot 代理连接错误：排查与修复完全指南
 ### 解决 ERR_PROXY_CONNECTION_FAILED 问题，从定位到根治的完整记录
 👉 [点击阅读](./posts/vscode-copilot-proxy-fix.md)
+📜 [原始排查聊天记录](./posts/vscode-copilot-proxy-chatlog.md) — 从报错到解决的真实对话过程
 
