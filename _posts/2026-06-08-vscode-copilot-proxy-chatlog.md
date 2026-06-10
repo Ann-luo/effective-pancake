@@ -11,6 +11,8 @@ Copilot代理连接失败错误解析
 
 用户之前说“都有改了”，可能是指按照建议合并了 JSON，并且可能也尝试了关闭代理的设置。但错误依旧。
 
+<!--more-->
+
 可能的原因：VS Code 仍然在使用代理，可能来自其他配置（系统代理、或 VS Code 的扩展特定代理设置，或网络本身的问题）。或者用户虽然更改了 settings.json 但未重启 VS Code 或未生效。
 
 另外错误信息“api.github.com/copilot_internal/user - error GET Failed to fetch”和“net::ERR_PROXY_CONNECTION_FAILED”表明网络请求试图通过代理连接但代理不可用。

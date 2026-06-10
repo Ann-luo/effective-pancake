@@ -15,6 +15,8 @@ description: "mklink /J 命令详解 + Link Shell Extension 图形化工具 + VS
 
 ---
 
+<!--more-->
+
 ## 一、你遇到了什么痛点？
 
 你有没有遇到过这些让人血压飙升的情况：
