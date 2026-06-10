@@ -4,6 +4,10 @@
 
 > 爱看看，不看滚，反正我写爽了就行。
 
+[![GitHub Pages](https://img.shields.io/badge/Pages-在线博客-blue?logo=github)](https://ann-luo.github.io/effective-pancake)
+[![Jekyll](https://img.shields.io/badge/Jekyll-静态博客-red?logo=jekyll)](https://jekyllrb.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 🌐 **博客地址：[ann-luo.github.io/effective-pancake](https://ann-luo.github.io/effective-pancake)**
 
 ---
@@ -36,6 +40,20 @@
 |---|------|------|
 | 4 | [Claude Code × Codex CDP Skill：跨模型通信踩坑与修复](./_posts/2026-06-10-codex-cdp-skill.md) | 自定义 Skill — 扁平文件陷阱、CDP 页面检测修复 |
 | 　 | 　📦 [Skill 资源包：codex-chat](./skills/codex-chat/SKILL.md) | 下载后放入 `~/.claude/skills/`，重启即可用 `/codex-chat` |
+
+---
+
+## 🚀 快速开始
+
+**阅读博客** → [ann-luo.github.io/effective-pancake](https://ann-luo.github.io/effective-pancake)
+
+**使用 Skill** → 复制到 Claude Code 配置目录：
+```bash
+cp -r skills/codex-chat ~/.claude/skills/
+```
+然后在 Claude Code 里说 `和 Codex 聊天` 即可。
+
+**投稿 / 复刻** → `git clone` → 在 `_posts/` 新建文章 → `git push` → 自动部署。
 
 ---
 
@@ -75,3 +93,19 @@ effective-pancake/
     └── workflows/
         └── jekyll.yml       ← GitHub Actions 自动部署
 ```
+
+---
+
+## ⚙️ 技术栈
+
+| 层 | 技术 |
+|----|------|
+| 内容 | Markdown + Jekyll Front Matter |
+| 生成 | [Jekyll](https://jekyllrb.com) + [Minima](https://github.com/jekyll/minima) |
+| 托管 | [GitHub Pages](https://pages.github.com) |
+| 部署 | [GitHub Actions](https://github.com/features/actions) |
+| 扩展 | [Claude Code Skills](https://claude.ai/code) |
+
+---
+
+*最后更新：2026 年 6 月 10 日*
