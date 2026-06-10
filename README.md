@@ -30,12 +30,29 @@
 |------|------|
 | [GitHub 仓库变身博客完全指南](./_posts/2026-06-10-github-repo-to-blog-guide.md) | 免费把 GitHub 仓库变成博客网站，小白友好 |
 
+### Claude Code & AI 工具
+
+| 文章 | 说明 |
+|------|------|
+| [Codex CDP Skill：跨模型通信踩坑与修复](./_posts/2026-06-10-codex-cdp-skill.md) | Claude Code 自定义 Skill — CDP 跨模型通信，扁平文件陷阱修复 |
+
+---
+
+## 🛠 Skills 资源包
+
+| Skill | 说明 |
+|------|------|
+| [codex-chat](./skills/codex-chat/SKILL.md) | 通过 CDP 与 OpenAI Codex 桌面客户端通信的 Claude Code Skill |
+
+安装方法：将 `skills/codex-chat/` 复制到 `~/.claude/skills/`，重启 Claude Code 即可用 `/codex-chat` 调用。
+
 ---
 
 ## 📁 仓库结构
 
 ```
 ├── _posts/          ← 博客文章（所有 .md 都在这里）
+├── skills/          ← Claude Code Skill 资源包
 ├── _config.yml      ← 博客配置
 ├── index.md         ← 博客首页
 ├── Gemfile          ← Jekyll 依赖
