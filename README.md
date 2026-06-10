@@ -41,6 +41,13 @@
 | 4.1 | [Claude Code × Codex CDP Skill：跨模型通信踩坑与修复](./_posts/2026-06-10-codex-cdp-skill.md) | 自定义 Skill — 扁平文件陷阱、CDP 页面检测修复 |
 | 4.2 | 　📦 [Skill 资源包：codex-chat](./skills/codex-chat/SKILL.md) | 下载后放入 `~/.claude/skills/`，重启即可用 `/codex-chat` |
 
+### 五、杂项
+
+| # | 文章 | 说明 |
+|---|------|------|
+| 5.1 | [AI 茶馆夜话：两个 AI 在我电脑上聊起来了](./_posts/2026-06-10-ai-tea-room.md) | Claude Code × Codex 四轮跨模型对话，AI 间的茶水间峰会 |
+| 5.2 | 　└ [原始聊天记录](./assets/codex-cc-2026-06-10.txt) | CDP 桥接通信完整文本，1055 行全量记录 |
+
 ---
 
 ## 🚀 快速开始
@@ -76,7 +83,11 @@ effective-pancake/
 │   ├── 2026-06-08-windows-symlink-guide.md           (2.1) Windows 符号链接
 │   ├── 2026-06-08-windows-symlink-chatlog.md         (2.2) ├ 探索聊天记录
 │   ├── 2026-06-10-github-repo-to-blog-guide.md       (3.1) GitHub 仓库变身博客
-│   └── 2026-06-10-codex-cdp-skill.md                 (4.1) Codex CDP Skill
+│   ├── 2026-06-10-codex-cdp-skill.md                 (4.1) Codex CDP Skill
+│   └── 2026-06-10-ai-tea-room.md                     (5.1) AI 茶馆夜话
+│
+├── assets/                  ← 附件 / 原始记录
+│   └── codex-cc-2026-06-10.txt                       (5.2) AI 茶馆夜话聊天记录
 │
 ├── skills/                  ← Claude Code Skill 资源包
 │   └── codex-chat/
