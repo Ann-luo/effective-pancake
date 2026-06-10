@@ -33,12 +33,6 @@ effective-pancake/
 │   ├── 2026-06-08-windows-symlink-chatlog.md
 │   └── 2026-06-10-github-repo-to-blog-guide.md
 │
-├── posts/                          ← 原始文章备份（非 Jekyll 格式）
-│   ├── vscode-copilot-proxy-fix.md
-│   ├── vscode-copilot-proxy-chatlog.md
-│   ├── windows-symlink-guide.md
-│   └── windows-symlink-chatlog.md
-│
 ├── _config.yml                     ← 博客设置（标题、主题、URL）
 ├── index.md                        ← 博客首页
 ├── Gemfile                         ← Jekyll 零件清单
@@ -56,7 +50,6 @@ effective-pancake/
 | `Gemfile` | Jekyll 需要的 Ruby 零件清单 | [Gemfile](https://github.com/Ann-luo/effective-pancake/blob/main/Gemfile) |
 | `jekyll.yml` | GitHub Actions 自动构建部署脚本 | [jekyll.yml](https://github.com/Ann-luo/effective-pancake/blob/main/.github/workflows/jekyll.yml) |
 | `_posts/` | **博客文章目录**，所有 `.md` 文章放这里 | [_posts/](https://github.com/Ann-luo/effective-pancake/tree/main/_posts) |
-| `posts/` | 原始文章备份（没 Front Matter 的旧版） | [posts/](https://github.com/Ann-luo/effective-pancake/tree/main/posts) |
 | `README.md` | 仓库主页介绍，在 GitHub 首页展示 | [README.md](https://github.com/Ann-luo/effective-pancake/blob/main/README.md) |
 
 > **核心就 4 个文件**：`_config.yml` + `index.md` + `Gemfile` + `jekyll.yml`。以后只往 `_posts/` 里塞文章。
