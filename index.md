@@ -12,16 +12,19 @@ title: effective-pancake
 ## 📂 文章导航
 
 **一、VS Code & GitHub Copilot**
-- 代理连接错误：排查与修复完全指南 + 原始排查聊天记录
+- 1.1 代理连接错误：排查与修复完全指南
+- 1.2 原始排查聊天记录
 
 **二、Windows 技巧**
-- 符号链接完全指南：拯救 C 盘空间 + 原始探索聊天记录
+- 2.1 符号链接完全指南：拯救 C 盘空间
+- 2.2 原始探索聊天记录
 
 **三、GitHub & 博客搭建**
-- GitHub 仓库变身博客完全指南
+- 3.1 GitHub 仓库变身博客完全指南
 
 **四、Claude Code & AI 工具**
-- Codex CDP Skill：跨模型通信踩坑与修复
+- 4.1 Codex CDP Skill：跨模型通信踩坑与修复
+- 4.2 Skill 资源包：codex-chat
 
 ---
 

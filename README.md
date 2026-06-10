@@ -18,28 +18,28 @@
 
 | # | 文章 | 说明 |
 |---|------|------|
-| 1 | [代理连接错误：排查与修复完全指南](./_posts/2026-06-08-vscode-copilot-proxy-fix.md) | 解决 `ERR_PROXY_CONNECTION_FAILED`，从定位到根治 |
-| 1-1 | 　└ [原始排查聊天记录](./_posts/2026-06-08-vscode-copilot-proxy-chatlog.md) | 从报错到解决的真实对话过程 |
+| 1.1 | [代理连接错误：排查与修复完全指南](./_posts/2026-06-08-vscode-copilot-proxy-fix.md) | 解决 `ERR_PROXY_CONNECTION_FAILED`，从定位到根治 |
+| 1.2 | 　└ [原始排查聊天记录](./_posts/2026-06-08-vscode-copilot-proxy-chatlog.md) | 从报错到解决的真实对话过程 |
 
 ### 二、Windows 技巧
 
 | # | 文章 | 说明 |
 |---|------|------|
-| 2 | [符号链接完全指南：拯救 C 盘空间](./_posts/2026-06-08-windows-symlink-guide.md) | `mklink /J` 命令详解 + 图形化工具 + VS Code 实战 |
-| 2-1 | 　└ [原始探索聊天记录](./_posts/2026-06-08-windows-symlink-chatlog.md) | 从忘记命令到掌握符号链接全过程 |
+| 2.1 | [符号链接完全指南：拯救 C 盘空间](./_posts/2026-06-08-windows-symlink-guide.md) | `mklink /J` 命令详解 + 图形化工具 + VS Code 实战 |
+| 2.2 | 　└ [原始探索聊天记录](./_posts/2026-06-08-windows-symlink-chatlog.md) | 从忘记命令到掌握符号链接全过程 |
 
 ### 三、GitHub & 博客搭建
 
 | # | 文章 | 说明 |
 |---|------|------|
-| 3 | [GitHub 仓库变身博客完全指南](./_posts/2026-06-10-github-repo-to-blog-guide.md) | 免费把 GitHub 仓库变成博客网站，小白友好 |
+| 3.1 | [GitHub 仓库变身博客完全指南](./_posts/2026-06-10-github-repo-to-blog-guide.md) | 免费把 GitHub 仓库变成博客网站，小白友好 |
 
 ### 四、Claude Code & AI 工具
 
 | # | 文章 | 说明 |
 |---|------|------|
-| 4 | [Claude Code × Codex CDP Skill：跨模型通信踩坑与修复](./_posts/2026-06-10-codex-cdp-skill.md) | 自定义 Skill — 扁平文件陷阱、CDP 页面检测修复 |
-| 　 | 　📦 [Skill 资源包：codex-chat](./skills/codex-chat/SKILL.md) | 下载后放入 `~/.claude/skills/`，重启即可用 `/codex-chat` |
+| 4.1 | [Claude Code × Codex CDP Skill：跨模型通信踩坑与修复](./_posts/2026-06-10-codex-cdp-skill.md) | 自定义 Skill — 扁平文件陷阱、CDP 页面检测修复 |
+| 4.2 | 　📦 [Skill 资源包：codex-chat](./skills/codex-chat/SKILL.md) | 下载后放入 `~/.claude/skills/`，重启即可用 `/codex-chat` |
 
 ---
 
@@ -61,7 +61,7 @@ cp -r skills/codex-chat ~/.claude/skills/
 
 | # | Skill | 说明 | 安装 |
 |---|-------|------|------|
-| 1 | [codex-chat](./skills/codex-chat/SKILL.md) | 通过 CDP 与 OpenAI Codex 桌面客户端通信 | `cp -r skills/codex-chat ~/.claude/skills/` |
+| 4.2 | [codex-chat](./skills/codex-chat/SKILL.md) | 通过 CDP 与 OpenAI Codex 桌面客户端通信，对应文章 4.1 | `cp -r skills/codex-chat ~/.claude/skills/` |
 
 ---
 
@@ -71,12 +71,12 @@ cp -r skills/codex-chat ~/.claude/skills/
 effective-pancake/
 │
 ├── _posts/                  ← 博客文章（Markdown）
-│   ├── 2026-06-08-vscode-copilot-proxy-fix.md       (一-1) VS Code Copilot 代理修复
-│   ├── 2026-06-08-vscode-copilot-proxy-chatlog.md   (一-1-1) ├ 排查聊天记录
-│   ├── 2026-06-08-windows-symlink-guide.md           (二-2) Windows 符号链接
-│   ├── 2026-06-08-windows-symlink-chatlog.md         (二-2-1) ├ 探索聊天记录
-│   ├── 2026-06-10-github-repo-to-blog-guide.md       (三-3) GitHub 仓库变身博客
-│   └── 2026-06-10-codex-cdp-skill.md                 (四-4) Codex CDP Skill
+│   ├── 2026-06-08-vscode-copilot-proxy-fix.md       (1.1) VS Code Copilot 代理修复
+│   ├── 2026-06-08-vscode-copilot-proxy-chatlog.md   (1.2) ├ 排查聊天记录
+│   ├── 2026-06-08-windows-symlink-guide.md           (2.1) Windows 符号链接
+│   ├── 2026-06-08-windows-symlink-chatlog.md         (2.2) ├ 探索聊天记录
+│   ├── 2026-06-10-github-repo-to-blog-guide.md       (3.1) GitHub 仓库变身博客
+│   └── 2026-06-10-codex-cdp-skill.md                 (4.1) Codex CDP Skill
 │
 ├── skills/                  ← Claude Code Skill 资源包
 │   └── codex-chat/
