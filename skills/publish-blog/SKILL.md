@@ -23,7 +23,7 @@ cd /c/tmp/effective-pancake && git pull origin main && git status
 ---
 layout: post
 title: "文章标题"
-date: YYYY-MM-DD HH:MM:SS +0800
+date: YYYY-MM-DD HH:MM:SS +0800   ← ⚠️ 时间必须早于当前 UTC 时间，否则 Jekyll 会跳过（future: false 默认）
 categories: ["分类名"]
 tags: [标签1, 标签2]
 ---
@@ -104,3 +104,4 @@ GitHub Pages 自动构建部署，1-5 分钟生效。
 - 仓库结构图用 ASCII 树（`│   ├──` / `│   └──`）
 - 三个文件（_posts/、index.md、README.md）必须同步更新，不能只改一个
 - commit message 用中文，Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+- **⚠️ Jekyll 未来日期陷阱**：Jekyll 默认 `future: false`，构建时跳过 date 晚于构建时间的文章。GitHub Actions 用 UTC 时间（= CST-8）。所以 `date` 的时间不要设为晚上（如 23:00 CST = 15:00 UTC），用 `12:00:00 +0800` 或更早的时间确保在 UTC 构建时已经是过去
