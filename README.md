@@ -30,12 +30,19 @@
 |------|------|
 | [GitHub 仓库变身博客完全指南](./_posts/2026-06-10-github-repo-to-blog-guide.md) | 免费把 GitHub 仓库变成博客网站，小白友好 |
 
+### Claude Code & AI 工具
+
+| 文章 | 说明 |
+|------|------|
+| [Claude Code × Codex 跨界聊天](./_posts/2026-06-10-claude-code-codex-cdp-chat.md) | 用 CDP 让 AI 们互相发消息，附完整 Skill 包 |
+
 ---
 
 ## 📁 仓库结构
 
 ```
 ├── _posts/          ← 博客文章（所有 .md 都在这里）
+├── skills/          ← Claude Code Skill 包
 ├── _config.yml      ← 博客配置
 ├── index.md         ← 博客首页
 ├── Gemfile          ← Jekyll 依赖
