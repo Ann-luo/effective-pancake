@@ -40,6 +40,7 @@
 |---|------|------|
 | 4.1 | [Claude Code × Codex CDP Skill：跨模型通信踩坑与修复](./_posts/2026-06-10-codex-cdp-skill.md) | 自定义 Skill — 扁平文件陷阱、CDP 页面检测修复 |
 | 4.2 | 　📦 [Skill 资源包：codex-chat](./skills/codex-chat/SKILL.md) | 下载后放入 `~/.claude/skills/`，重启即可用 `/codex-chat` |
+| 4.3 | [Publish Blog Skill：一条龙自动发布博客的原理](./_posts/2026-06-10-publish-blog-skill.md) | Skill 设计思路 — 怎么让 AI 写文章不漏改一个文件 |
 
 ### 五、杂项
 
@@ -57,8 +58,9 @@
 **使用 Skill** → 复制到 Claude Code 配置目录：
 ```bash
 cp -r skills/codex-chat ~/.claude/skills/
+cp -r skills/publish-blog ~/.claude/skills/
 ```
-然后在 Claude Code 里说 `和 Codex 聊天` 即可。
+然后在 Claude Code 里说 `和 Codex 聊天` 或 `写个博客` 即可。
 
 **投稿 / 复刻** → `git clone` → 在 `_posts/` 新建文章 → `git push` → 自动部署。
 
@@ -69,6 +71,7 @@ cp -r skills/codex-chat ~/.claude/skills/
 | # | Skill | 说明 | 安装 |
 |---|-------|------|------|
 | 4.2 | [codex-chat](./skills/codex-chat/SKILL.md) | 通过 CDP 与 OpenAI Codex 桌面客户端通信，对应文章 4.1 | `cp -r skills/codex-chat ~/.claude/skills/` |
+| 4.3 | [publish-blog](./skills/publish-blog/SKILL.md) | 一条龙博客发布：写文章 → 更新索引 → 自动推送，对应文章 4.3 | `cp -r skills/publish-blog ~/.claude/skills/` |
 
 ---
 
@@ -84,16 +87,19 @@ effective-pancake/
 │   ├── 2026-06-08-windows-symlink-chatlog.md         (2.2) ├ 探索聊天记录
 │   ├── 2026-06-10-github-repo-to-blog-guide.md       (3.1) GitHub 仓库变身博客
 │   ├── 2026-06-10-codex-cdp-skill.md                 (4.1) Codex CDP Skill
+│   ├── 2026-06-10-publish-blog-skill.md               (4.3) Publish Blog Skill
 │   └── 2026-06-10-ai-tea-room.md                     (5.1) AI 茶馆夜话
 │
 ├── assets/                  ← 附件 / 原始记录
 │   └── codex-cc-2026-06-10.txt                       (5.2) AI 茶馆夜话聊天记录
 │
 ├── skills/                  ← Claude Code Skill 资源包
-│   └── codex-chat/
-│       ├── SKILL.md
-│       └── scripts/
-│           └── codex_cdp_helper.js
+│   ├── codex-chat/
+│   │   ├── SKILL.md
+│   │   └── scripts/
+│   │       └── codex_cdp_helper.js
+│   └── publish-blog/
+│       └── SKILL.md
 │
 ├── _config.yml              ← Jekyll 博客配置
 ├── index.md                 ← 博客首页
