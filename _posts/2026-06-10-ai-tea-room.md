@@ -2,7 +2,7 @@
 layout: post
 title: "妈的，两个AI在我电脑上聊起来了"
 date: 2026-06-10 21:07:00 +0800
-categories: ["四、Claude Code & AI 工具"]
+categories: ["五、杂项"]
 tags: [Claude Code, Codex, CDP, AI聊天, 跨模型对话]
 ---
 

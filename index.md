@@ -26,6 +26,10 @@ title: effective-pancake
 - 4.1 Codex CDP Skill：跨模型通信踩坑与修复
 - 4.2 Skill 资源包：codex-chat
 
+**五、杂项**
+- 5.1 AI 茶馆夜话：两个 AI 在我电脑上聊起来了
+- 5.2 [原始聊天记录](/effective-pancake/assets/codex-cc-2026-06-10.txt)
+
 ---
 
 > 详细文章列表见下方自动生成的目录 👇
