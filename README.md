@@ -55,6 +55,7 @@
 |---|------|------|
 | 6.1 | [Codex 控制 QQ 发消息调试记](./_posts/2026-06-11-codex-qq-messenger-debug.md) | 十一关调试实录：权限、ESM、缓存、Enter vs Return、窗口状态…… |
 | 6.2 | 　📦 [Skill 资源包：qq-messenger](./skills/qq-messenger/SKILL.md) | 放入 Codex 的 skills 目录，通过 Codex Computer Use 控制 QQ 发消息 |
+| 6.3 | 　└ [原始聊天记录](./assets/codex-qq-2026-06-11.txt) | 完整调试对话过程，从权限报错到消息发送成功 |
 
 ---
 
@@ -101,7 +102,8 @@ effective-pancake/
 │   └── 2026-06-10-ai-tea-room.md                     (5.1) AI 茶馆夜话
 │
 ├── assets/                  ← 附件 / 原始记录
-│   └── codex-cc-2026-06-10.txt                       (5.2) AI 茶馆夜话聊天记录
+│   ├── codex-cc-2026-06-10.txt                       (5.2) AI 茶馆夜话聊天记录
+│   └── codex-qq-2026-06-11.txt                       (6.3) Codex QQ 发消息调试记录
 │
 ├── skills/                  ← Claude Code Skill 资源包
 │   ├── codex-chat/

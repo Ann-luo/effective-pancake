@@ -34,6 +34,7 @@ title: effective-pancake
 **六、Codex & Computer Use**
 - 6.1 Codex 控制 QQ 发消息——一晚上的调试记录
 - 6.2 Skill 资源包：qq-messenger
+- 6.3 [原始聊天记录](/effective-pancake/assets/codex-qq-2026-06-11.txt)
 
 ---
 

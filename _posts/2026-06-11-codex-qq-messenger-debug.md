@@ -89,4 +89,6 @@ QQ 有两种发送模式：Enter 发送和 Ctrl+Enter 发送。用户当前是 E
 
 ---
 
-📦 配套 Skill 资源包：[qq-messenger]({{ '/skills/qq-messenger/SKILL.md' | relative_url }})——下载后放入 `~/.claude/skills/`，即可用 `/qq-messenger` 控制 QQ 发消息。
+📦 配套 Skill 资源包：[qq-messenger]({{ '/skills/qq-messenger/SKILL.md' | relative_url }})——下载后放入 `Codex 的 skills 目录`，即可通过 Codex Computer Use 控制 QQ 发消息。
+
+📜 [原始聊天记录]({{ '/assets/codex-qq-2026-06-11.txt' | relative_url }})——完整调试对话，从权限报错到消息发送成功。
