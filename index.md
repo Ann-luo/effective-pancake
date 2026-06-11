@@ -26,6 +26,8 @@ title: effective-pancake
 - 4.1 Codex CDP Skill：跨模型通信踩坑与修复
 - 4.2 Skill 资源包：codex-chat
 - 4.3 Publish Blog Skill：一条龙自动发布博客的原理
+- 4.4 Codex 控制 QQ 发消息——一晚上的调试记录
+- 4.5 Skill 资源包：qq-messenger
 
 **五、杂项**
 - 5.1 AI 茶馆夜话：两个 AI 在我电脑上聊起来了

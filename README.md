@@ -41,6 +41,8 @@
 | 4.1 | [Claude Code × Codex CDP Skill：跨模型通信踩坑与修复](./_posts/2026-06-10-codex-cdp-skill.md) | 自定义 Skill — 扁平文件陷阱、CDP 页面检测修复 |
 | 4.2 | 　📦 [Skill 资源包：codex-chat](./skills/codex-chat/SKILL.md) | 下载后放入 `~/.claude/skills/`，重启即可用 `/codex-chat` |
 | 4.3 | [Publish Blog Skill：一条龙自动发布博客的原理](./_posts/2026-06-10-publish-blog-skill.md) | Skill 设计思路 — 怎么让 AI 写文章不漏改一个文件 |
+| 4.4 | [Codex 控制 QQ 发消息调试记](./_posts/2026-06-11-codex-qq-messenger-debug.md) | 十一关调试实录：权限、ESM、缓存、Enter vs Return、窗口状态…… |
+| 4.5 | 　📦 [Skill 资源包：qq-messenger](./skills/qq-messenger/SKILL.md) | 下载后放入 `~/.claude/skills/`，重启即可通过 Codex Computer Use 控制 QQ 发消息 |
 
 ### 五、杂项
 
@@ -59,6 +61,7 @@
 ```bash
 cp -r skills/codex-chat ~/.claude/skills/
 cp -r skills/publish-blog ~/.claude/skills/
+cp -r skills/qq-messenger ~/.claude/skills/
 ```
 然后在 Claude Code 里说 `和 Codex 聊天` 或 `写个博客` 即可。
 
@@ -72,6 +75,7 @@ cp -r skills/publish-blog ~/.claude/skills/
 |---|-------|------|------|
 | 4.2 | [codex-chat](./skills/codex-chat/SKILL.md) | 通过 CDP 与 OpenAI Codex 桌面客户端通信，对应文章 4.1 | `cp -r skills/codex-chat ~/.claude/skills/` |
 | 4.3 | [publish-blog](./skills/publish-blog/SKILL.md) | 一条龙博客发布：写文章 → 更新索引 → 自动推送，对应文章 4.3 | `cp -r skills/publish-blog ~/.claude/skills/` |
+| 4.5 | [qq-messenger](./skills/qq-messenger/SKILL.md) | 通过 Codex Computer Use 控制 Windows QQ 发消息，对应文章 4.4 | `cp -r skills/qq-messenger ~/.claude/skills/` |
 
 ---
 
@@ -88,6 +92,7 @@ effective-pancake/
 │   ├── 2026-06-10-github-repo-to-blog-guide.md       (3.1) GitHub 仓库变身博客
 │   ├── 2026-06-10-codex-cdp-skill.md                 (4.1) Codex CDP Skill
 │   ├── 2026-06-10-publish-blog-skill.md               (4.3) Publish Blog Skill
+│   ├── 2026-06-11-codex-qq-messenger-debug.md          (4.4) Codex 控制 QQ 发消息
 │   └── 2026-06-10-ai-tea-room.md                     (5.1) AI 茶馆夜话
 │
 ├── assets/                  ← 附件 / 原始记录
@@ -98,7 +103,9 @@ effective-pancake/
 │   │   ├── SKILL.md
 │   │   └── scripts/
 │   │       └── codex_cdp_helper.js
-│   └── publish-blog/
+│   ├── publish-blog/
+│   │   └── SKILL.md
+│   └── qq-messenger/
 │       └── SKILL.md
 │
 ├── _config.yml              ← Jekyll 博客配置
@@ -125,4 +132,4 @@ effective-pancake/
 
 ---
 
-*最后更新：2026 年 6 月 10 日*
+*最后更新：2026 年 6 月 11 日*
