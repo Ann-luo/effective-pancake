@@ -54,7 +54,7 @@
 | # | 文章 | 说明 |
 |---|------|------|
 | 6.1 | [Codex 控制 QQ 发消息调试记](./_posts/2026-06-11-codex-qq-messenger-debug.md) | 十一关调试实录：权限、ESM、缓存、Enter vs Return、窗口状态…… |
-| 6.2 | 　📦 [Skill 资源包：qq-messenger](./skills/qq-messenger/SKILL.md) | 下载后放入 `~/.claude/skills/`，重启即可通过 Codex Computer Use 控制 QQ 发消息 |
+| 6.2 | 　📦 [Skill 资源包：qq-messenger](./skills/qq-messenger/SKILL.md) | 放入 Codex 的 skills 目录，通过 Codex Computer Use 控制 QQ 发消息 |
 
 ---
 
@@ -62,13 +62,13 @@
 
 **阅读博客** → [ann-luo.github.io/effective-pancake](https://ann-luo.github.io/effective-pancake)
 
-**使用 Skill** → 复制到 Claude Code 配置目录：
+**Claude Code Skill** → 复制到 Claude Code 配置目录：
 ```bash
 cp -r skills/codex-chat ~/.claude/skills/
 cp -r skills/publish-blog ~/.claude/skills/
-cp -r skills/qq-messenger ~/.claude/skills/
 ```
-然后在 Claude Code 里说 `和 Codex 聊天` 或 `写个博客` 即可。
+
+**Codex Skill** → 将 `skills/qq-messenger/SKILL.md` 放入 Codex 的 skills 目录，即可通过 Codex Computer Use 控制 QQ 发消息。
 
 **投稿 / 复刻** → `git clone` → 在 `_posts/` 新建文章 → `git push` → 自动部署。
 
@@ -80,7 +80,7 @@ cp -r skills/qq-messenger ~/.claude/skills/
 |---|-------|------|------|
 | 4.2 | [codex-chat](./skills/codex-chat/SKILL.md) | 通过 CDP 与 OpenAI Codex 桌面客户端通信，对应文章 4.1 | `cp -r skills/codex-chat ~/.claude/skills/` |
 | 4.3 | [publish-blog](./skills/publish-blog/SKILL.md) | 一条龙博客发布：写文章 → 更新索引 → 自动推送，对应文章 4.3 | `cp -r skills/publish-blog ~/.claude/skills/` |
-| 6.2 | [qq-messenger](./skills/qq-messenger/SKILL.md) | 通过 Codex Computer Use 控制 Windows QQ 发消息，对应文章 6.1 | `cp -r skills/qq-messenger ~/.claude/skills/` |
+| 6.2 | [qq-messenger](./skills/qq-messenger/SKILL.md) | 通过 Codex Computer Use 控制 Windows QQ 发消息，对应文章 6.1 | 放入 Codex 的 skills 目录 |
 
 ---
 
