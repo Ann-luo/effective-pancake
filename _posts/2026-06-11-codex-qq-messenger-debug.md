@@ -2,7 +2,7 @@
 layout: post
 title: "Codex 控制 QQ 发消息——一晚上的调试记录"
 date: 2026-06-11 12:00:00 +0800
-categories: [Claude Code, AI工具, 调试]
+categories: [Codex, Computer Use, 调试]
 tags: [Codex, QQ, Computer Use, 自动化, 调试]
 ---
 
