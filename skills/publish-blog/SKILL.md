@@ -78,32 +78,47 @@ tags: [标签1, 标签2]
 
 **普通附件**（聊天记录、截图等）→ `assets/` 目录。
 
-**Skill 资源包**（如果文章配套了 Claude Code Skill）→ `skills/<skill-name>/SKILL.md`。
+**Skill 资源包**（如果文章配套了 Skill）→ `skills/<skill-name>/SKILL.md`。
 
-附带 Skill 时需要同步更新四处：
+⚠️ **先看 Skill 是给谁用的，安装说明不一样：**
+
+| Skill 类型 | 安装说明 | 例子 |
+|-----------|---------|------|
+| Claude Code Skill | `cp -r skills/xxx ~/.claude/skills/` | codex-chat、publish-blog |
+| Codex Skill | 放入 Codex 的 skills 目录（不是 Claude Code 的目录！） | qq-messenger |
+
+附带 Skill 需要同步更新这些位置：
 
 | 位置 | 格式 |
 |------|------|
 | `skills/<name>/SKILL.md` | 复制 Skill 文件到仓库 |
-| index.md 导航 | `- X.Y Skill 资源包：skill-name`（紧跟在对应文章后面） |
-| README 文章目录表 | `\| X.Y \| 　📦 [Skill 资源包：xxx](./skills/xxx/SKILL.md) \| 说明 \|` |
-| README Skills 资源包表 | `\| X.Y \| [xxx](./skills/xxx/SKILL.md) \| 说明 \| cp -r skills/xxx ~/.claude/skills/ \|` |
-| README 仓库结构图 | `skills/` 区块加 `├── xxx/` + `│   └── SKILL.md` |
-| README 快速开始 | `cp` 命令块加一行 |
+| index.md 导航 | `- X.Y Skill 资源包：skill-name`（紧跟对应文章） |
+| README 文章目录表 | `\| X.Y \| 　📦 [Skill 资源包：xxx](./skills/xxx/SKILL.md) \| 说明 + 正确安装路径 \|` |
+| README Skills 资源包表 | `\| X.Y \| [xxx](./skills/xxx/SKILL.md) \| 说明 \| 安装命令（Claude Code 用 cp，Codex 用文字）\|` |
+| README 仓库结构图 | `skills/` 区块加条目 |
+| README 快速开始 | Claude Code Skill → 放进 cp 命令块；Codex Skill → 另写一行文字说明 |
 
-示例（qq-messenger，编号 6.2，对应文章 6.1）：
+示例——Codex Skill（qq-messenger，编号 6.2）：
 
 ```markdown
-<!-- index.md -->
-- 6.1 Codex 控制 QQ 发消息——一晚上的调试记录
-- 6.2 Skill 资源包：qq-messenger
-
 <!-- README 文章目录表 -->
-| 6.1 | [Codex 控制 QQ 发消息调试记](./_posts/...) | 说明 |
-| 6.2 | 　📦 [Skill 资源包：qq-messenger](./skills/qq-messenger/SKILL.md) | 说明 |
+| 6.2 | 　📦 [Skill 资源包：qq-messenger](./skills/qq-messenger/SKILL.md) | 放入 Codex 的 skills 目录 |
 
 <!-- README Skills 资源包表 -->
-| 6.2 | [qq-messenger](./skills/qq-messenger/SKILL.md) | 说明 | `cp -r skills/qq-messenger ~/.claude/skills/` |
+| 6.2 | [qq-messenger](./skills/qq-messenger/SKILL.md) | 通过 Codex Computer Use 控制 QQ | 放入 Codex 的 skills 目录 |
+
+<!-- README 快速开始：Codex 的另起一行，不跟 Claude Code 的 cp 混在一起 -->
+**Codex Skill** → 将 `skills/qq-messenger/SKILL.md` 放入 Codex 的 skills 目录
+```
+
+示例——Claude Code Skill（codex-chat，编号 4.2）：
+
+```markdown
+<!-- README Skills 资源包表 -->
+| 4.2 | [codex-chat](./skills/codex-chat/SKILL.md) | CDP 与 Codex 通信 | `cp -r skills/codex-chat ~/.claude/skills/` |
+
+<!-- README 快速开始：放进 Claude Code 的 cp 块 -->
+cp -r skills/codex-chat ~/.claude/skills/
 ```
 
 ### 步骤 6：提交推送
@@ -139,3 +154,4 @@ GitHub Pages 自动构建部署，1-5 分钟生效。
 - 三个文件（_posts/、index.md、README.md）必须同步更新，不能只改一个
 - commit message 用中文，Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
 - **⚠️ Jekyll 未来日期陷阱**：Jekyll 默认 `future: false`，构建时跳过 date 晚于构建时间的文章。GitHub Actions 用 UTC 时间（= CST-8）。所以 `date` 的时间不要设为晚上（如 23:00 CST = 15:00 UTC），用 `12:00:00 +0800` 或更早的时间确保在 UTC 构建时已经是过去
+- **⚠️ Skill 类型不要搞混**：附带 Skill 时先确认是 Claude Code 还是 Codex 用的，安装路径不一样。Codex Skill 不要写 `cp -r ... ~/.claude/skills/`
