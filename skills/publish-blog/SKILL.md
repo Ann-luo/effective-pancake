@@ -74,15 +74,43 @@ tags: [标签1, 标签2]
 - index.md 导航：新增 `**七、分类名**` 区块
 - 本文件的「现有分类」表：新增一行
 
-### 步骤 5：附件
+### 步骤 5：附件 / Skill 资源包
 
-聊天记录、截图等放入 `assets/` 目录。
+**普通附件**（聊天记录、截图等）→ `assets/` 目录。
+
+**Skill 资源包**（如果文章配套了 Claude Code Skill）→ `skills/<skill-name>/SKILL.md`。
+
+附带 Skill 时需要同步更新四处：
+
+| 位置 | 格式 |
+|------|------|
+| `skills/<name>/SKILL.md` | 复制 Skill 文件到仓库 |
+| index.md 导航 | `- X.Y Skill 资源包：skill-name`（紧跟在对应文章后面） |
+| README 文章目录表 | `\| X.Y \| 　📦 [Skill 资源包：xxx](./skills/xxx/SKILL.md) \| 说明 \|` |
+| README Skills 资源包表 | `\| X.Y \| [xxx](./skills/xxx/SKILL.md) \| 说明 \| cp -r skills/xxx ~/.claude/skills/ \|` |
+| README 仓库结构图 | `skills/` 区块加 `├── xxx/` + `│   └── SKILL.md` |
+| README 快速开始 | `cp` 命令块加一行 |
+
+示例（qq-messenger，编号 6.2，对应文章 6.1）：
+
+```markdown
+<!-- index.md -->
+- 6.1 Codex 控制 QQ 发消息——一晚上的调试记录
+- 6.2 Skill 资源包：qq-messenger
+
+<!-- README 文章目录表 -->
+| 6.1 | [Codex 控制 QQ 发消息调试记](./_posts/...) | 说明 |
+| 6.2 | 　📦 [Skill 资源包：qq-messenger](./skills/qq-messenger/SKILL.md) | 说明 |
+
+<!-- README Skills 资源包表 -->
+| 6.2 | [qq-messenger](./skills/qq-messenger/SKILL.md) | 说明 | `cp -r skills/qq-messenger ~/.claude/skills/` |
+```
 
 ### 步骤 6：提交推送
 
 ```bash
 cd /c/tmp/effective-pancake
-git add _posts/ index.md README.md assets/
+git add _posts/ index.md README.md assets/ skills/
 git commit -m "新文章: 标题"
 git push origin main
 ```
