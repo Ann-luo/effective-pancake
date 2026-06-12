@@ -2,14 +2,34 @@
 
 前后端分离的猜数字游戏，1-100 随机数。
 
-## 怎么玩
+## 第一次玩
+
+1. 装 [Node.js](https://nodejs.org/)
+2. `Win + R` → 输入 `powershell` → 回车
+3. 进入项目目录：
+   ```bash
+   cd codex-demo
+   ```
+4. 装依赖（只需一次）：
+   ```bash
+   npm install
+   ```
+5. 启动服务器：
+   ```bash
+   npx tsx src/index.ts
+   ```
+6. 看到 `Todo app running on http://localhost:3000` 就说明跑起来了
+7. 浏览器打开 `http://localhost:3000`
+
+## 以后每次玩
 
 ```bash
-npm install
-npm run dev
+Win + R → powershell → 回车
+cd codex-demo
+npx tsx src/index.ts
 ```
 
-浏览器打开 `http://localhost:3000`
+浏览器打开 `http://localhost:3000`，玩完按 `Ctrl + C` 关。
 
 ## 项目结构
 
