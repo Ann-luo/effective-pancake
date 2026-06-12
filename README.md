@@ -61,10 +61,10 @@
 
 | # | 文章 | 说明 |
 |---|------|------|
-| 7.1 | [跟 AI 学编程的第一天](./post/日志/2026-06-12-跟AI学编程的第一天.md) | Skills、服务器、前后端，从小白到理解 |
-| 7.2 | 　└ [原始聊天记录](./post/日志/2026-06-12-assets/ai-学编程-聊天记录.txt) | 从安装 skills 到做出猜数字游戏全过程 |
-| 7.3 | 　🎮 [猜数字小游戏（双击版）](./post/日志/2026-06-12-assets/guess-the-number.html) | 下载后双击浏览器直接玩，无需命令行 |
-| 7.4 | 　🎮 [猜数字小游戏（服务器版）](./post/日志/2026-06-12-assets/codex-demo/) | 前后端分离版本，需 Node.js 运行 |
+| 7.1 | [跟 AI 学编程的第一天](./_posts/2026-06-12-跟AI学编程的第一天.md) | Skills、服务器、前后端，从小白到理解 |
+| 7.2 | 　└ [原始聊天记录](./assets/ai-学编程-聊天记录-2026-06-12.txt) | 从安装 skills 到做出猜数字游戏全过程 |
+| 7.3 | 　🎮 [猜数字小游戏（双击版）](./assets/games/guess-the-number.html) | 下载后双击浏览器直接玩，无需命令行 |
+| 7.4 | 　🎮 [猜数字小游戏（服务器版）](./assets/games/codex-demo/) | 前后端分离版本，需 Node.js 运行 |
 
 ---
 
@@ -108,22 +108,21 @@ effective-pancake/
 │   ├── 2026-06-10-codex-cdp-skill.md                 (4.1) Codex CDP Skill
 │   ├── 2026-06-10-publish-blog-skill.md               (4.3) Publish Blog Skill
 │   ├── 2026-06-11-codex-qq-messenger-debug.md          (6.1) Codex 控制 QQ 发消息
-│   └── 2026-06-10-ai-tea-room.md                     (5.1) AI 茶馆夜话
+│   ├── 2026-06-10-ai-tea-room.md                     (5.1) AI 茶馆夜话
+│   └── 2026-06-12-跟AI学编程的第一天.md                 (7.1) 跟 AI 学编程
 │
-├── post/                    ← 旧版文章 + 日志分类
+├── post/                    ← 旧版文章
 │   ├── 符号链接.md
-│   ├── 重置系统和iOS的区别.md
-│   └── 日志/
-│       ├── 2026-06-12-跟AI学编程的第一天.md           (7.1) 日志文章
-│       └── 2026-06-12-assets/
-│           ├── ai-学编程-聊天记录.txt                  (7.2) 聊天记录
-│           ├── guess-the-number.html                  (7.3) 猜数字双击版
-│           ├── README.md                              游戏说明
-│           └── codex-demo/                            (7.4) 猜数字服务器版
+│   └── 重置系统和iOS的区别.md
 │
 ├── assets/                  ← 附件 / 原始记录
 │   ├── codex-cc-2026-06-10.txt                       (5.2) AI 茶馆夜话聊天记录
-│   └── codex-qq-2026-06-11.txt                       (6.3) Codex QQ 发消息调试记录
+│   ├── codex-qq-2026-06-11.txt                       (6.3) Codex QQ 发消息调试记录
+│   ├── ai-学编程-聊天记录-2026-06-12.txt              (7.2) Skills 学习聊天记录
+│   └── games/
+│       ├── README.md                                  游戏说明
+│       ├── guess-the-number.html                      (7.3) 猜数字双击版
+│       └── codex-demo/                                (7.4) 猜数字服务器版
 │
 ├── skills/                  ← Claude Code Skill 资源包
 │   ├── codex-chat/
