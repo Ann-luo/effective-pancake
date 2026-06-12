@@ -57,6 +57,15 @@
 | 6.2 | 　📦 [Skill 资源包：qq-messenger](./skills/qq-messenger/SKILL.md) | 放入 Codex 的 skills 目录，通过 Codex Computer Use 控制 QQ 发消息 |
 | 6.3 | 　└ [原始聊天记录](./assets/codex-qq-2026-06-11.txt) | 完整调试对话过程，从权限报错到消息发送成功 |
 
+### 七、日志
+
+| # | 文章 | 说明 |
+|---|------|------|
+| 7.1 | [跟 AI 学编程的第一天](./post/日志/2026-06-12-跟AI学编程的第一天.md) | Skills、服务器、前后端，从小白到理解 |
+| 7.2 | 　└ [原始聊天记录](./post/日志/2026-06-12-assets/ai-学编程-聊天记录.txt) | 从安装 skills 到做出猜数字游戏全过程 |
+| 7.3 | 　🎮 [猜数字小游戏（双击版）](./post/日志/2026-06-12-assets/guess-the-number.html) | 下载后双击浏览器直接玩，无需命令行 |
+| 7.4 | 　🎮 [猜数字小游戏（服务器版）](./post/日志/2026-06-12-assets/codex-demo/) | 前后端分离版本，需 Node.js 运行 |
+
 ---
 
 ## 🚀 快速开始
@@ -101,6 +110,17 @@ effective-pancake/
 │   ├── 2026-06-11-codex-qq-messenger-debug.md          (6.1) Codex 控制 QQ 发消息
 │   └── 2026-06-10-ai-tea-room.md                     (5.1) AI 茶馆夜话
 │
+├── post/                    ← 旧版文章 + 日志分类
+│   ├── 符号链接.md
+│   ├── 重置系统和iOS的区别.md
+│   └── 日志/
+│       ├── 2026-06-12-跟AI学编程的第一天.md           (7.1) 日志文章
+│       └── 2026-06-12-assets/
+│           ├── ai-学编程-聊天记录.txt                  (7.2) 聊天记录
+│           ├── guess-the-number.html                  (7.3) 猜数字双击版
+│           ├── README.md                              游戏说明
+│           └── codex-demo/                            (7.4) 猜数字服务器版
+│
 ├── assets/                  ← 附件 / 原始记录
 │   ├── codex-cc-2026-06-10.txt                       (5.2) AI 茶馆夜话聊天记录
 │   └── codex-qq-2026-06-11.txt                       (6.3) Codex QQ 发消息调试记录
@@ -139,4 +159,4 @@ effective-pancake/
 
 ---
 
-*最后更新：2026 年 6 月 11 日*
+*最后更新：2026 年 6 月 13 日*

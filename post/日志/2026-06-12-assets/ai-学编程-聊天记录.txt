@@ -1,0 +1,188 @@
+
+你能安装这个skills吗？能的话自己安装mattpocock/skills
+23:05
+已运行 Get-ChildItem -Force C:\Users\Ouroborous\Documents\Codex\2026-06-12\skills-mattpocock-skills-https-github-com
+Read MCP resource
+已运行 Get-Content "C:\Users\Ouroborous\.codex\skills\.system\skill-installer\SKILL.md"
+已运行 Get-ChildItem -Force "C:\Users\Ouroborous\.codex\skills\.system\skill-installer\scripts"
+好，我先探索一下 mattpocock/skills 这个仓库的结构，看看里面有哪些 skill 可以安装。
+
+已运行 $headers = @{"Accept" = "application/vnd.github+json"; "X-GitHub-Api-Version" = "2022-11-28"}; Invoke-RestMethod -Uri "https://api.github.com/repos/mattpocock/skills/contents" -Headers $headers | ConvertTo-Json -Depth 2，已持续 3s
+仓库有 skills 目录，让我进去看看有哪些 skill。
+
+
+已运行 2 条命令
+有意思，这个仓库按分类组织 skill。让我看看每个分类里有什么。
+
+已运行 $headers = @{"Accept" = "application/vnd.github+json"; "X-GitHub-Api-Version" = "2022-11-28"}; $categories = @("engineering", "in-progress", "misc", "personal", "productivity"); foreach ($cat in $categories) { Write-Host "=== $cat ==="; $response = Invoke-RestMethod -Uri "https://api.github.com/repos/mattpocock/skills/contents/skills/$cat" -Headers $headers; foreach ($item in $response) { if ($item.type -eq "dir") { Write-Host " $($item.name)/" } else { Write-Host " $($item.name)" } } }，已持续 8s
+让我确认一下哪些已经安装，哪些还没安装。
+
+已运行 Get-ChildItem -Directory -Force "$env:USERPROFILE\.codex\skills" | Select-Object -ExpandProperty Name; Write-Host "---"; Get-ChildItem -Directory -Force "$env:USERPROFILE\.agents\skills" 2>$null | Select-Object -ExpandProperty Name
+已处理 1m 35s
+mattpocock/skills 仓库里的 全部 24 个 skill 都已经安装好了，不需要额外操作：
+
+分类	Skills
+engineering	diagnose, grill-with-docs, improve-codebase-architecture, prototype, setup-matt-pocock-skills, tdd, to-issues, to-prd, triage, zoom-out
+in-progress	review, writing-beats, writing-fragments, writing-shape
+misc	git-guardrails-claude-code, migrate-to-shoehorn, scaffold-exercises, setup-pre-commit
+personal	edit-article, obsidian-vault
+productivity	caveman, grill-me, handoff, teach, write-a-skill
+它们已经在 ~/.agents/skills/ 下就位，当前会话也可以直接使用（skills 列表里全都有）。你是在哪里看到这些 skill 想试一下？
+
+23:07
+这个skills干嘛用的，解释一下，初始化仓库干啥啥？我是纯小白，术语需要解释
+23:12
+已处理 1s
+好，我用大白话给你讲。
+
+这些 skills 是什么？
+把 Codex 想象成一个万能助手，skills 就是给这个助手装的"技能包"。每装一个 skill，助手就多学会一种做事的方式。
+
+举个栗子：
+
+你平时跟 Codex 说「帮我改个 bug」，它就去改了。但如果装了 diagnose（诊断）这个 skill，Codex 会先复现 bug → 缩小范围 → 推测原因 → 精准修复 → 再验证一遍，按一套严谨的流程来，不容易漏掉。
+你说「帮我写篇文章」，装了 edit-article（编辑文章）之后，它会按专业编辑的思路帮你调结构、精简句子，而不是随便排排版。
+一句话：skills 让 Codex 干活更有章法、更靠谱。
+
+这 24 个 skill 分别干嘛？
+写代码相关的（engineering）
+diagnose — 专业 debug 流程：复现→定位→修复→验证
+tdd — 先写测试再写代码，保证功能不出错
+to-issues — 把一个大的开发计划拆成小任务
+to-prd — 把你的想法整理成产品需求文档
+triage — 给 bug/需求排优先级，管理任务流转
+review — 像老工程师一样帮你审查代码
+prototype — 快速搭个原型让你先试试看
+setup-pre-commit — 自动在提交代码前检查格式/类型是否出错
+git-guardrails-claude-code — 防止你不小心执行危险的 git 命令（比如强制推送覆盖别人的代码）
+migrate-to-shoehorn — TypeScript 测试工具迁移
+scaffold-exercises — 批量生成练习题/课程结构
+improve-codebase-architecture — 帮你分析和改进代码整体架构
+zoom-out — 让你跳出细节看全局代码结构
+写作相关的
+writing-beats — 像游戏分支一样慢慢写出文章，一步步选方向
+writing-fragments — 先把零散想法记下来，后面再拼成文章
+writing-shape — 把一堆素材整理打磨成可发布的文章
+思维/沟通类
+grill-me — 像面试官一样不断追问你的计划，帮你把想法磨清楚
+grill-with-docs — 同上，但会对照项目文档来追问
+caveman — 极简沟通模式，让你和 Codex 对话时省 token（约省 75%）
+teach — 帮你学新技术或概念
+handoff — 把当前对话打包成交接文档，给另一个助手接着干
+效率/生活类
+obsidian-vault — 管理 Obsidian 笔记软件里的笔记
+write-a-skill — 帮你创建自定义 skill
+「初始化仓库」是什么意思？
+你问的应该是这些 skill 里提到的 setup-matt-pocock-skills。
+
+这个 skill 做的事情很简单：在你的项目里创建一个配置文件，告诉其他 skills 「这个项目用的是什么任务管理工具（比如 GitHub Issues）、团队里怎么给任务打标签、项目文档放在哪」。其他 skills 看了这个配置文件就知道该怎么干活了。
+
+打个比方：就像你到一个新公司第一天，HR 告诉你工位在哪、WiFi 密码是啥、报销找谁——这些基础信息不搞清楚，后面的活没法干。setup-matt-pocock-skills 做的就是这件事：给 skills 们"报到"。
+
+还有什么想了解的？想试哪个 skill 的话直接说就行。
+
+23:13
+初始化这个你会自己写是吗
+23:13
+对，我可以用 setup-matt-pocock-skills 这个 skill 自己搞定。让我看看它具体做什么。
+
+已运行 Get-Content "$env:USERPROFILE\.agents\skills\setup-matt-pocock-skills\SKILL.md"
+已处理 12s
+可以，我替你跑。但这有个前提：必须在真正的项目文件夹里。
+
+当前这个对话只是个临时工作区（skills-mattpocock-skills-https-github-com），里面没有代码、没有 git 仓库、没有配置文件——就是个空壳。setup-matt-pocock-skills 需要在一个实际的项目里干活，它会：
+
+看看你的项目用的是什么问题追踪工具（GitHub Issues 还是别的）
+记下你用哪些标签管理任务
+记下项目文档放在哪
+怎么用？ 下次你在某个项目里打开 Codex，跟我说一句「初始化一下 mattwpocock skills」就行，我会自动完成。
+
+你现在有实际项目仓库要初始化吗？
+
+23:14
+没有
+23:15
+已处理 0s
+那就不用管它。这玩意儿是给有项目的人用的，没项目的时候用不上。
+
+你现在就是在探索、了解阶段对吧。有什么其他想了解的吗？或者想让我演示某个 skill 怎么工作的，我们可以随手搭个小项目来试试。
+
+23:15
+你搭个小项目放D:\User\Ouroborous\Desktop\codex using给我演示一下这个skills还有什么初始化呗，我还是不理解
+23:16
+好的，我们先搭个小项目，然后一步步演示初始化。先创建一个带点代码的小仓库。
+
+
+已创建 3 个文件正在创建 1 个文件
+已创建 3 个文件正在创建 1 个文件
+ • 正在编写 18 行已运行 1 条命令
+已运行 1 条命令
+好，项目搭好了。现在提交一下，然后开始演示 setup-matt-pocock-skills。
+
+已运行 Set-Location "D:\User\Ouroborous\Desktop\codex using"; git add -A; git commit -m "Initial commit: todo app scaffold"，已持续 1s
+现在正式开始演示 setup-matt-pocock-skills。先做第一步：探索项目。
+
+
+已运行 3 条命令
+已处理 1m 8s
+好，探索完毕。下面是这个项目的现状：
+
+没有远程仓库（没关联 GitHub/GitLab）
+没有 AGENTS.md、CLAUDE.md、CONTEXT.md
+没有问题追踪目录（docs/agents/、.scratch/）
+一个干干净净的新项目。现在按流程，我逐一问你三个问题。
+
+第一步：选问题追踪工具
+先解释: "问题追踪工具"就是你把任务、bug、需求记在哪。比如「做个登录功能」「修复崩溃bug」这些。setup-matt-pocock-skills 初始化后，以后你用 to-issues（拆任务）、triage（排优先级）这些 skill 时，它们要知道把任务写到哪里。
+
+因为你这个项目没有关联 GitHub，你有几个选择：
+
+本地文件（推荐） — 任务存成 .scratch/某个功能/ 下的 markdown 文件，不依赖任何外部平台，适合个人项目
+GitHub — 需要先把仓库推到 GitHub，任务放 GitHub Issues 里
+GitLab — 同理，任务放 GitLab Issues
+你想用哪个？没有特殊偏好的话直接选 1 就行。
+
+
+已编辑 4 个文件
++68
+-0
+
+D:/User/Ouroborous/Desktop/codex using/README.md
++10
+-0
+
+D:/User/Ouroborous/Desktop/codex using/package.json
++18
+-0
+
+D:/User/Ouroborous/Desktop/codex using/src/index.ts
++29
+-0
+
+再显示 1 个文件
+23:18
+1，你专门建个文件夹放项目，太乱了
+23:20
+你说得对，桌面上一堆文件混一起确实乱。我把它挪到干净的文件夹里。
+
+
+已运行 2 条命令
+已处理 22s
+干净了。D:\User\Ouroborous\Desktop\codex-demo 里只有项目文件。继续初始化流程。
+
+第二步：任务标签
+先解释: 以后你用 triage（排优先级）这个 skill 管理任务时，它会给每个任务打标签来表示状态。类似你淘宝订单的"待付款→已发货→已签收"。下面五个是默认标签：
+
+needs-triage — 还没人看过，需要评估
+needs-info — 等别人补充信息
+ready-for-agent — 信息齐全，Codex 可以直接开工
+ready-for-human — 需要你亲自上手
+wontfix — 不做
+就用默认的，不改，行吗？
+
+23:20
+
+
+
+
+Codex++ 1.2.4
