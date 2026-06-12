@@ -145,6 +145,7 @@ GitHub Pages 自动构建部署，1-5 分钟生效。
 | 四 | Claude Code & AI 工具 |
 | 五 | 杂项 |
 | 六 | Codex & Computer Use |
+| 七 | 日志 |
 
 ## 注意事项
 
