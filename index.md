@@ -36,6 +36,12 @@ title: effective-pancake
 - 6.2 Skill 资源包：qq-messenger
 - 6.3 [原始聊天记录](/effective-pancake/assets/codex-qq-2026-06-11.txt)
 
+**七、日志**
+- 7.1 跟 AI 学编程的第一天：Skills、服务器、前后端
+- 7.2 [原始聊天记录](/effective-pancake/assets/ai-学编程-聊天记录-2026-06-12.txt)
+- 🎮 [猜数字小游戏（双击版）](/effective-pancake/assets/games/guess-the-number.html)
+- 🎮 [猜数字小游戏（服务器版）](/effective-pancake/assets/games/codex-demo/)
+
 ---
 
 > 详细文章列表见下方自动生成的目录 👇
