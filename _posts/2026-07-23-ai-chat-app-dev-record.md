@@ -1439,14 +1439,214 @@ HTML 改成 `onclick="handleAvatarClick()"`，删掉 `ondblclick`。350ms 的延
 
 ---
 
+## 二十三、IndexedDB 迁移：告别 localStorage 天花板
+
+写到 6800 行的时候，一个根本性问题浮现了：localStorage 只有 5MB。
+
+单智能体、一个房间、几百条消息——5MB 绰绰有余。但你想想后续要做的功能：一个智能体开几个房间、每个房间有独立记忆 + 日记 + 签到 + 成就……数据量是乘法级增长的。打开 DevTools 一看，localStorage 已经吃了 1.2MB。再不加节制，迟早爆仓。
+
+### localStorage vs IndexedDB
+
+localStorage 是同步 API，一行 `getItem` 搞定。简单，但太简单了——只能存字符串，只能按 key 查，没有索引，没有事务。
+
+IndexedDB 是浏览器自带的"真正的数据库"：
+
+| | localStorage | IndexedDB |
+|------|:--:|:--:|
+| 容量 | 5-10MB | 几百 MB ~ 几 GB |
+| 数据类型 | 只存字符串 | 任意 JS 对象 |
+| 查询 | `getItem(key)` | 按索引查、按范围查、排序 |
+| API 风格 | 同步 | 异步（Promise） |
+
+对聊天应用来说，IndexedDB 最大的吸引力就一个：**不用再担心"存储空间不足"的 toast 了。**
+
+### 封装层：把异步藏起来
+
+IndexedDB 原生 API 很啰嗦——打开数据库、建 store、开事务、读写——每一步都是回调。我写了一个薄封装：
+
+```javascript
+function idbOpen() {
+  return new Promise(function(resolve, reject) {
+    var req = indexedDB.open('bles_db_v1', 1);
+    req.onupgradeneeded = function(e) {
+      var db = e.target.result;
+      if (!db.objectStoreNames.contains('data')) {
+        db.createObjectStore('data', { keyPath: 'key' });
+      }
+    };
+    req.onsuccess = function(e) { resolve(e.target.result); };
+    req.onerror = function(e) { reject(e.target.error); };
+  });
+}
+
+function idbGet(key) {
+  return idbOpen().then(function(db) {
+    return new Promise(function(resolve) {
+      var tx = db.transaction('data', 'readonly');
+      var req = tx.objectStore('data').get(key);
+      req.onsuccess = function() { resolve(req.result ? req.result.value : undefined); };
+    });
+  });
+}
+```
+
+`idbGet` / `idbPut` / `idbDelete`——三个函数覆盖所有操作。`loadData()` 从同步改成 `async`，init 流程用 `await` 等数据就绪。
+
+### 迁移：搬家不丢东西
+
+这是最不能出错的部分。用户打开新版 HTML → 自动检测 localStorage 里有旧数据 → 逐 key 搬运到 IndexedDB → 标记"已迁移" → 正常启动。旧 localStorage 数据**不删**，当保险。
+
+旧 key 名（`bles_global_settings`、`agent_bres_bles_moments`……）和新 key 名（`global_settings`、`agent_bres_moments`……）不同。迁移函数里建了一个映射表，把 25+ 个旧 key 一一搬到新位置，同时把原来分散的记忆、日记、签到、成就等合并到一个 `room_{agentId}_default` 对象里。
+
+### 翻车：第一次迁移只搬了聊天记录
+
+写完后自己测——旧数据打开，聊天记录在，但朋友圈全空、日记全空、设置回到默认。排查发现迁移函数把旧 key 原样复制到 IDB，但 `loadData` 用的是新 key 名去找——全找不着。只有聊天记录因为 `loadData` 里有一个 fallback 分支捡了回来。
+
+修法：重写 `idbMigrateFromLocalStorage()`，每个旧 key → 新 key 显式映射，per-agent 的数据读到内存里重组成 room 格式再写。加了一个自动修复逻辑——检测到 `_migrated` 标记存在但关键 key 缺失 → 删标记 → 重新迁移。用户什么都不用做，刷新页面就自动修好。
+
+### 异步带来的改动面
+
+`loadData()` 从同步变异步，调用它的地方都要改：
+- `switchAgent()` → `.then()` 回调
+- `switchRoom()` → `.then()` 回调
+- 初始化的 `loadData()` → 包在 `(async function() { await loadData(); ... })()` 里
+
+这是整个项目最大的一次"地基改造"。改完之后 `saveData()` 也不用再担心 QuotaExceededError 了——IndexedDB 的容量在聊天应用这个量级上几乎是无限的。
+
+---
+
+## 二十四、平行宇宙：同一个 AI，不同的房间
+
+有了 IndexedDB 打底，房间（平行宇宙）就水到渠成了。
+
+### 需求
+
+同一个布雷斯，在"日常"房间里跟你嘻嘻哈哈，在"心事"房间里跟你认真聊人生。两个房间的记忆、情绪、好感度完全独立——"日常"房间里的布雷斯不记得"心事"房间里的对话。
+
+### 数据模型
+
+```
+room_bres_default/   → { messages, mood, affection, memory, diary, ... }
+room_bres_心事/      → { messages, mood, affection, memory, diary, ... }
+room_bres_游戏/      → { messages, mood, affection, memory, diary, ... }
+```
+
+每个房间是一个独立的 JSON 对象存在 IndexedDB 里。`roomKey()` 函数根据当前智能体 ID 和房间 ID 拼接 key。
+
+**房间内独立的数据：** 聊天记录、心情值、好感度、记忆库、日记、签到、成就、心情日志、快捷回复、定时消息、消息反应
+
+**跨房间共享的：** 人设模板、头像、API Key、模型参数、朋友圈（同一个人的朋友圈没必要每个房间发一遍）
+
+### 房间 UI
+
+聊天页头部加了一个 📂 按钮，点击弹出房间列表：
+
+```
+● 日常          ✏️ 🗑️
+○ 心事          ✏️ 🗑️
+○ 游戏          ✏️ 🗑️
+─────────────────────
+[新房间名________] [+ 创建]
+```
+
+默认房间"日常"不可删除，保证始终至少有一个房间。切房间的体验跟切频道一样：保存当前房间 → 加载新房间 → 全量刷新消息列表、记忆、心情条、日记。
+
+### 切房间的实现
+
+```javascript
+function switchRoom(roomId) {
+  if (roomId === activeRoomId) return;
+  saveRoomData(); // 保存当前房间状态
+  activeRoomId = roomId;
+  // 重置所有 volatile 状态
+  messages = []; moodValue = 55; affectionLevel = 1;
+  memoryStore = []; diaryEntries = []; diaryCounter = 0;
+  // ... 全部变量清空
+  loadData().then(function() {
+    updateChatHeader();
+    renderMessages();
+    renderMoments();
+    renderMoodCalendar();
+    // ...
+    showToast('已切换到「' + getRoomName() + '」📂');
+  });
+}
+```
+
+`saveRoomData()` 把当前房间的所有状态打包写入 IDB，然后 `loadData()` 从新房间的 key 读数据。切换是完全的——不会串味。
+
+### 导入导出也跟着房间走
+
+聊天的导入导出、记忆+配置的导入导出都加了 `roomId` 和 `roomName` 字段。导出文件名会标房间名：`布雷斯-心事-聊天备份-2026-07-24.json`。导入时把数据灌进当前房间，不会影响其他房间。
+
+---
+
+## 二十五、时间线：按月回放聊天记录
+
+有了 IndexedDB 的容量保证，不用再删旧消息了。聊天记录可以一直存着——那就值得做一个回看功能。
+
+### 需求
+
+一个日历视图，有聊天记录的日期标绿点。点日期 → 显示那天所有消息。再加一个回放模式，消息按时间顺序逐条弹出，像看电影一样重温那天的对话。
+
+### 日历 UI
+
+用 CSS Grid 画 7 列日历。当月日期显示在格子里，有聊天记录的加绿点（`::after`伪元素），今天加粗，选中的变绿底白字。
+
+```javascript
+function renderTimelineCalendar() {
+  var chatDates = new Set();
+  for (var i = 0; i < messages.length; i++) {
+    var d = new Date(messages[i].time);
+    chatDates.add(d.getFullYear() + '-' + ...);
+  }
+  // 画 7 列 × 5-6 行的日历 grid
+  for (var d = 1; d <= daysInMonth; d++) {
+    var hasChat = chatDates.has(dateStr) ? ' has-chat' : '';
+    html += '<div class="tc-day' + hasChat + '" onclick="showTimelineDate(...)">' + d + '</div>';
+  }
+}
+```
+
+点日期 → 过滤出当天的消息，渲染在日历下方。消息行复用聊天气泡样式——左边灰色 AI 气泡，右边绿色用户气泡。
+
+### 回放模式
+
+点"▶️ 回放" → 消息区清空 → 逐条弹出。用 `setTimeout` 链式调度：
+
+```javascript
+function timelineReplayTick() {
+  if (_timelineReplayIdx >= _timelineMsgs.length) {
+    stopTimelineReplay(); return;
+  }
+  // 追加一条消息到 DOM
+  var m = _timelineMsgs[_timelineReplayIdx];
+  container.appendChild(renderMsgRow(m));
+  _timelineReplayIdx++;
+  // 调度下一条：基础间隔 1200ms ÷ 速度倍数
+  var delay = Math.max(200, Math.floor(1200 / _timelineReplaySpeed));
+  _timelineReplayTimer = setTimeout(timelineReplayTick, delay);
+}
+```
+
+速度可调：1×（正常节奏）、3×（快速回顾）、10×（飞速翻）。本质上就是把消息的时间间隔压缩到 200ms-1200ms 之间。
+
+### 一个细节
+
+切房间或切智能体时，如果当前在时间线页面，日历会自动刷新为新房间的数据。这个在 `switchRoom` 和 `switchAgent` 的 post-load 回调里各加了一行 `renderTimelineCalendar()`。
+
+时间线是一个"感性的功能"——它不是工具，更像一个回忆盒子。三个月后点开日历，看到某一天你跟 AI 聊了 47 条消息，点进去从头看到尾，像翻旧相册。
+
+---
+
 ## 写在最后
 
-从第一个版本到现在，这个单文件从 4600 行涨到了 ~6800 行，170KB 变成了 ~260KB。
+从第一个版本到现在，这个单文件从 4600 行涨到了 ~7300 行，170KB 变成了 ~290KB。底层从 localStorage 换成了 IndexedDB，功能从单房间扩展到了平行宇宙 + 时间线。
 
-有时候回头看最早写的代码——变量命名随心所欲、函数没有错误处理、API 调用连 `r.ok` 都不检查。改 bug 的过程就是修自己以前留下的坑。
+有时候回头看最早写的代码——变量命名随心所欲、函数没有错误处理、API 调用连 `r.ok` 都不检查。改 bug 的过程就是修自己以前留下的坑。最大的坑是 IndexedDB 迁移——第一版漏掉了 20+ 个 key 的映射，用户打开只看到聊天记录，朋友圈和日记全空。修好之后加了个自动检测，再也不会丢数据了。
 
-但它确实从"一个能聊天的网页"变成了一个有朋友圈、有日记、能主动发消息、能沉默生气、有锁屏密码的完整应用。甚至开始有一点点"角色感"——不是工具，更像一个住在手机里的伙伴。
+但它确实从"一个能聊天的网页"变成了一个有朋友圈、有日记、有锁屏密码、有多个独立房间、能回放聊天记录的完整应用。甚至开始有一点点"角色感"——不是工具，更像一个住在手机里的伙伴。
 
-做这个东西最大的感受：**AI 编程最大的门槛不是技术，是耐心。** 大部分功能不难，但要做对、做顺、不出 bug，需要反复调、反复测。一个 Prompt 的措辞可能要改三版，一个交互细节可能要想很久。
+做这个东西最大的感受：**AI 编程最大的门槛不是技术，是耐心。** 大部分功能不难，但要做对、做顺、不出 bug，需要反复调、反复测。一个 Prompt 的措辞可能要改三版，一个迁移函数可能要重写两次。但每次修好一个坑，你对这个系统的理解就深一层。
 
 感谢看到这里。如果你也想做一个自己的 AI 聊天应用，最实在的建议就是：**先写出来，再改好。** 4600 行的第一版肯定有很多烂代码，但有一版之后你就知道什么东西需要改了。别在脑子里憋完美的方案——先让它跑起来。
