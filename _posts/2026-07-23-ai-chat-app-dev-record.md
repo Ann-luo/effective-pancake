@@ -1639,14 +1639,80 @@ function timelineReplayTick() {
 
 ---
 
+## 二十六、最难的 bug：六个连锁故障的排查记
+
+IndexedDB + 平行宇宙 + 时间线这三个大功能做完后，出现了一堆诡异的 bug：房间切换失败、日历永远显示一月、回放按钮失灵、手机端完全不能用。而且桌面端和手机端表现还不一样。
+
+这是整个项目最难的一次调试——不是修一个 bug，是六个 bug 互相遮掩。
+
+### Bug 1：房间切换失败（致命）
+
+现象：创建一个新房间，切换过去，toast 却显示"已切换到「日常」"。消息也没变。
+
+排查：打了三个 Agent 并行追踪代码路径，发现一个竞态——
+
+`switchRoom` 把 `activeRoomId` 设成新房间 ID，然后调 `loadData()` 加载数据。但 `loadData` 里有一行：
+
+```javascript
+var ar = await idbGet('active_room_' + activeAgentId);
+if (ar) activeRoomId = ar;  // ← 从 IDB 读到旧值，覆盖了新值！
+```
+
+`switchRoom` 只把新 ID 写进了**内存**，没写进 IDB。`loadData` 从 IDB 读到**旧房间 ID** → 覆盖内存 → 等于没切。修法：`loadData` 只在初始加载时从 IDB 恢复 `activeRoomId`，切房间时跳过。
+
+### Bug 2：日历永远显示一月（致命）
+
+现象：回忆页的日历不管什么时候打开，永远显示一月。明明有聊天记录的日期能看到绿点，但日历月份不对。
+
+排查：
+
+```javascript
+if (year === undefined) { year = _timelineYear || now.getFullYear(); _timelineYear = year; }
+if (month === undefined) { month = _timelineMonth; if (!_timelineYear) month = now.getMonth(); _timelineMonth = month; }
+```
+
+第一行把 `_timelineYear` 从 0 设成了 2026（truthy）。第二行 `!_timelineYear` → false → month 永远保持初始值 0（一月）。**第一行的赋值破坏了第二行的空值检测。**
+
+修法：在年份赋值前先保存 `var wasBlank = !_timelineYear`，用 `wasBlank` 判断月份。
+
+### Bug 3：回放按钮失灵
+
+现象：日历显示了消息，点"▶️ 回放"却说"这天没有聊天记录"。
+
+`toggleTimelineReplay` 检查 `_timelineMsgs.length`，但 `_timelineMsgs` 可能在渲染后被某个路径清空了。修法：回放前不信任缓存，每次从 `messages` 重新过滤。
+
+### Bug 4：月份标签显示 `0月`、`13月`
+
+导航箭头用 `_timelineMonth-1` 和 `_timelineMonth+1`，越界值直接拼进标签字符串。修法：`new Date(year, month, 1)` 标准化后再取月份。
+
+### Bug 5：手机端房间列表点不了
+
+桌面端正常，手机端点了没反应。原因是房间列表项没有 `event.stopPropagation()`——移动端的 touch 事件冒泡到父级 overlay 的 `onclick="hideRoomList()"`，列表先关了，`switchRoom` 没机会执行。修法：加 `event.stopPropagation()` + `touch-action: manipulation`。
+
+### Bug 6：余额 0 被改成 1000
+
+迁移时 `parseFloat(balance) || 1000`——JavaScript 的 `0` 是 falsy。修法：`!isNaN(bv)` 显式检查。
+
+### 六个 bug 的共同特征
+
+全是**状态管理**问题——内存和 IDB 不同步、变量初始化顺序依赖、缓存信任过度。核心教训：
+
+1. **异步持久化不能 fire-and-forget 之后又立刻读回来**——竞态窗口比你想象的大
+2. **`if (!x)` 在 JavaScript 里是地雷**——`0`、`''`、`false` 都是 falsy。该用 `=== undefined` 的时候别偷懒
+3. **同一个函数服务于多个调用场景时，要注意副作用**——`loadData` 同时服务初始化、切房间、切智能体，各自的前提条件不同
+
+修完这六个 bug 之后，桌面端和手机端行为完全一致了。用户说"成功了！！！！我爱你！！！！！"——那一瞬间觉得所有调试都值了。
+
+---
+
 ## 写在最后
 
-从第一个版本到现在，这个单文件从 4600 行涨到了 ~7300 行，170KB 变成了 ~290KB。底层从 localStorage 换成了 IndexedDB，功能从单房间扩展到了平行宇宙 + 时间线。
+从第一个版本到现在，这个单文件从 4600 行涨到了 ~7300 行，170KB 变成了 ~290KB。底层从 localStorage 换成了 IndexedDB，功能从单房间扩展到了平行宇宙 + 时间线。最难的六个 bug 修了三天，根因全是状态同步和 JavaScript 的 falsy 陷阱。
 
-有时候回头看最早写的代码——变量命名随心所欲、函数没有错误处理、API 调用连 `r.ok` 都不检查。改 bug 的过程就是修自己以前留下的坑。最大的坑是 IndexedDB 迁移——第一版漏掉了 20+ 个 key 的映射，用户打开只看到聊天记录，朋友圈和日记全空。修好之后加了个自动检测，再也不会丢数据了。
+有时候回头看最早写的代码——变量命名随心所欲、函数没有错误处理、API 调用连 `r.ok` 都不检查。改 bug 的过程就是修自己以前留下的坑。最大的坑是 IndexedDB 迁移——第一版漏掉了 20+ 个 key 的映射，用户打开只看到聊天记录，朋友圈和日记全空。第二版被 `loadData` 覆盖 `activeRoomId` 的竞态坑了三天。修好之后加了自动检测和 localStorage 强制恢复，再也不会丢数据了。
 
 但它确实从"一个能聊天的网页"变成了一个有朋友圈、有日记、有锁屏密码、有多个独立房间、能回放聊天记录的完整应用。甚至开始有一点点"角色感"——不是工具，更像一个住在手机里的伙伴。
 
-做这个东西最大的感受：**AI 编程最大的门槛不是技术，是耐心。** 大部分功能不难，但要做对、做顺、不出 bug，需要反复调、反复测。一个 Prompt 的措辞可能要改三版，一个迁移函数可能要重写两次。但每次修好一个坑，你对这个系统的理解就深一层。
+做这个东西最大的感受：**AI 编程最大的门槛不是技术，是耐心。** 大部分功能不难，但要做对、做顺、不出 bug，需要反复调、反复测。一个 Prompt 的措辞可能要改三版，一个迁移函数可能要重写两次，六个连锁 bug 要调三天。但每次修好一个坑，你对这个系统的理解就深一层。
 
 感谢看到这里。如果你也想做一个自己的 AI 聊天应用，最实在的建议就是：**先写出来，再改好。** 4600 行的第一版肯定有很多烂代码，但有一版之后你就知道什么东西需要改了。别在脑子里憋完美的方案——先让它跑起来。
