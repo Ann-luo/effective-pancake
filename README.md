@@ -41,7 +41,7 @@
 | 4.1 | [Claude Code × Codex CDP Skill：跨模型通信踩坑与修复](./_posts/2026-06-10-codex-cdp-skill.md) | 自定义 Skill — 扁平文件陷阱、CDP 页面检测修复 |
 | 4.2 | 　📦 [Skill 资源包：codex-chat](./skills/codex-chat/SKILL.md) | 下载后放入 `~/.claude/skills/`，重启即可用 `/codex-chat` |
 | 4.3 | [Publish Blog Skill：一条龙自动发布博客的原理](./_posts/2026-06-10-publish-blog-skill.md) | Skill 设计思路 — 怎么让 AI 写文章不漏改一个文件 |
-| 4.4 | [从零到一：AI 聊天应用全栈开发记录](./_posts/2026-07-23-ai-chat-app-dev-record.md) | 单文件 ~7300 行，含多智能体 + 流式 + 多气泡 + 沉默 + 日记 + 朋友圈 + 锁屏 + IndexedDB + 平行宇宙 + 时间线 |
+| 4.4 | [从零到一：AI 聊天应用全栈开发记录](./_posts/2026-07-23-ai-chat-app-dev-record.md) | 单文件 ~7700 行，含多智能体 + 流式 + 多气泡 + 沉默 + 日记 + 朋友圈 + 锁屏 + IndexedDB + 平行宇宙 + 时间线 + 共享待办 |
 
 ### 五、杂项
 
@@ -160,4 +160,4 @@ effective-pancake/
 
 ---
 
-*最后更新：2026 年 7 月 24 日*
+*最后更新：2026 年 7 月 25 日*
