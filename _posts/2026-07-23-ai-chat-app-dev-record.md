@@ -1373,6 +1373,72 @@ AI 看到这个会自然流露出那种"好吧好吧回你一下"的语气，不
 
 ---
 
+## 二十二、拍一拍：一个被 onclick 吃掉的交互
+
+"拍一拍"是微信的经典交互——双击对方头像，头像抖一下，弹一行小字"你拍了拍XXX"。我做了一个翻版：双击布雷斯头像 → 头像抖动 → toast 提示根据心情变化（高心情："布雷斯回头对你温柔一笑 💕"，低心情："布雷斯从沉思中回过神…"）。
+
+功能写好了，双击头像却触发不了——弹出来的是智能体切换列表。
+
+### 排查
+
+头像的 HTML：
+
+```html
+<div class="avatar" id="bresAvatar"
+     onclick="showAgentList()">
+```
+
+JS 里又绑了一个：
+
+```javascript
+bresEl.ondblclick = doNudge;
+```
+
+同一个元素上 `onclick` 和 `ondblclick` 同时存在。双击时发生了什么？
+
+1. 第一下 click → `onclick` 立刻触发 → `showAgentList()` 弹出智能体列表
+2. 第二下 click → `ondblclick` 触发 → `doNudge()` 执行
+
+但此时智能体列表已经占满了屏幕，toast 被遮在背后，头像的抖动动画也看不到了。用户只看到智能体列表弹出来，以为拍一拍根本没做。
+
+本质上：**onclick 抢在 ondblclick 之前执行了**，破坏了双击的体验。
+
+### 修法：单击延迟判定
+
+经典方案——用定时器区分单击和双击。单击后不立刻执行，等 350ms，如果这期间来了第二下 click，说明是双击，取消等待直接拍一拍。
+
+```javascript
+var _nudgeClickTimer = null;
+function handleAvatarClick() {
+  if (_nudgeClickTimer) {
+    // 350ms 内来了第二下 → 双击 → 拍一拍
+    clearTimeout(_nudgeClickTimer);
+    _nudgeClickTimer = null;
+    doNudge();
+    return;
+  }
+  // 第一下 → 等着，350ms 后还没第二下就是单击
+  _nudgeClickTimer = setTimeout(function() {
+    _nudgeClickTimer = null;
+    showAgentList();
+  }, 350);
+}
+```
+
+HTML 改成 `onclick="handleAvatarClick()"`，删掉 `ondblclick`。350ms 的延迟对单击来说几乎无感，但双击检测足够了。
+
+### 一个小细节
+
+头像的 title 提示原来是"双击拍一拍"，改成了"单击切换智能体 · 双击拍一拍 布雷斯"——光标悬停时就能看到两个操作，不需要猜。
+
+### 反思
+
+这个问题暴露了一个更普遍的坑：**HTML 属性里写 `onclick` 和 JS 里绑 `ondblclick` 是两套独立的事件注册**，不会互相覆盖。同一个元素上同时存在时，click 永远先到。如果 click handler 有副作用（弹浮层、导航跳转），dblclick 基本等于不存在。
+
+以后遇到"双击触发不了"的问题，先检查有没有 onclick 在抢。
+
+---
+
 ## 写在最后
 
 从第一个版本到现在，这个单文件从 4600 行涨到了 ~6800 行，170KB 变成了 ~260KB。
