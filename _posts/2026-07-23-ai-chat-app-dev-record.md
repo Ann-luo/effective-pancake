@@ -2003,6 +2003,22 @@ HBuilder X 的云端证书绑定了**账号 + AppID（包名）**。只要不改
 
 每次更新就是把新的 `布雷斯.html` 覆盖 `index.html`，然后云打包。
 
+### 导出方案迭代：从 plus.io 到系统分享
+
+第一版 App 导出用了 `plus.io.requestFileSystem(PUBLIC_DOWNLOADS, ...)` 直接写 Downloads 目录。真机上反馈 toast 显示"已保存"但文件不存在。
+
+排查发现是 Android 10+ 的 scoped storage（分区存储）导致的。`PUBLIC_DOWNLOADS` 在旧 Android 上是真实的公共目录，在新版本上变成了受限区域。`plus.io` 的 write 回调确实执行了——但文件被写到了应用专属子目录，用户用文件管理器看不到。
+
+改了两版：第二版用 `<a download>` 在 WebView 里触发下载，部分旧设备不支持。最终版分两路——先把文件写入 App 私有文档目录（`PRIVATE_DOC`，App 自己的沙盒，100% 写入成功），然后调起 Android 系统分享面板（`plus.share.sendWithSystem`）。用户自己选"保存到文件"或发微信、发邮件。
+
+```
+生成 JSON → 写入 App 私有目录 → 📤 弹出系统分享面板
+                                      ↓
+                         用户选：保存到文件 / 微信 / 邮件 / 网盘…
+```
+
+这个方案的巧妙之处在于：不跟 Android 权限系统硬刚，把选择权交给用户。系统分享面板是每个 Android 用户都熟悉的交互，学习成本为零。浏览器端保持 `<a download>` 不变。
+
 ---
 
 ## 写在最后
