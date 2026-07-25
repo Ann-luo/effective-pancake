@@ -1933,9 +1933,81 @@ AI 占位 push → appendMessageRow(aiMsg) → 追加一个节点
 
 ---
 
+## 三十、APK 打包与双环境适配
+
+做完自检优化之后，用 HBuilder X 把这个 HTML 打成了 APK。一个 8200 行的单文件，变成安装包装进手机——然后发现了好几个只在真机环境里才会暴露的问题。
+
+### APK 环境 vs 浏览器环境
+
+浏览器和 WebView 看起来都是 Web 技术栈，但底层 API 不同：
+
+- 浏览器：`FileReader`、`Blob` download、`<a download>`、`navigator.clipboard`
+- HBuilder WebView：多了 `plus.io`（文件 IO）、`plus.gallery`（相册）、`plus.device` 等原生桥接
+
+所以需要一个环境检测：
+
+```javascript
+var _isApp = (function() {
+  try { return !!(navigator.userAgent.indexOf('Html5Plus') !== -1 || window.plus); } catch(e) { return false; }
+})();
+```
+
+之后所有"浏览器和 App 行为不同"的地方，都用 `if (_isApp)` 分支处理。
+
+### Bug 1：智能体切换数据串台（致命）
+
+这是打包 APK 之后发现的第一个大 bug，但它其实是代码逻辑问题，和环境无关——只是在真机上测试切换智能体频率更高，更容易触发。
+
+根因：`switchAgent` 在切换前调了 `saveData()` 保存旧智能体数据，然后改 `activeAgentId`，再调 `loadData()` 加载新数据。但**没有清空内存里的旧变量**——`messages`、`moments`、`memoryStore`、`todos`、`playlist` 等 20+ 个变量原封不动留在内存里。如果新智能体还没在 IDB 存过数据，`loadData` 读不到东西就不赋值，旧数据残留在内存 → 串台。
+
+修法：在 `loadData` 之前把所有 per-agent / per-room 变量全量清零——跟 `switchRoom` 一模一样的逻辑。同时关闭播放器、重置 `_currentPlayingId`。
+
+这是一个典型的"状态没在所有退出路径里清理"的错误。之前 `clearAll` 漏了 `todos` 也是同一类。
+
+### Bug 2：JSON 导入只弹相机
+
+在浏览器里，`<input type="file" accept=".json">` 会弹出文件选择器、过滤显示 JSON 文件。但在 Android WebView 里，`.json` 扩展名不被系统文件选择器识别 → 系统不知道你要选文件 → 默认跳到相机。
+
+修法：`accept="application/json,.json"`。MIME 类型 + 扩展名双保险，Android 能识别 `application/json`。
+
+图片上传的 `accept="image/*"` 没有问题——Android 原生支持这个 MIME，会弹出相机 / 相册 / 文件管理器三个选项。
+
+### Bug 3：导出文件名乱码
+
+浏览器 download 机制用 `<a download="文件名.json">`，但在 HBuilder WebView 里，中文文件名经过 URL 编码后变成 `%E8%81%8A%E5%A4%A9%E5%A4%87%E4%BB%BD.json`，部分 Android 版本甚至直接变成乱码字符。
+
+修法：App 环境不用浏览器 download，改用 `plus.io` 直接写到手机 `Downloads/` 目录。文件名做安全处理（去掉特殊字符和空格），用 ISO 日期格式避免中文。写了一个统一的 `saveFileToDevice(name, content, mimeType)` 函数，三个导出入口（聊天备份、待办清单、共享歌单）全部走它。
+
+浏览器环境保持原来的 download 逻辑不变。
+
+### 不需要改的地方
+
+有一个重要的教训：**图片上传不需要动。** 一开始想用 `plus.gallery.pick()` 接管所有图片选择，写了一大堆适配代码。后来意识到 `accept="image/*"` 在 WebView 里本来就正常工作——系统弹出原生选择器，相机、相册、文件管理器三个选项都在。加了 50 行适配代码反而把选项限制成了只有相册。
+
+全删了。回到最简单的 `triggerFileInput(id) { document.getElementById(id).click(); }`。
+
+**不是每个环境差异都需要"适配"——有时候原生行为就是最好的行为。**
+
+### APK 更新的数据持久性
+
+HBuilder X 的云端证书绑定了**账号 + AppID（包名）**。只要不改 `manifest.json` 里的 AppID，每次云打包用的是同一张证书 → 覆盖安装 APK → IndexedDB 数据全部保留。
+
+整个项目的 HBuilder 结构不超过三个文件：
+
+```
+小手机/
+├── index.html      ← 布雷斯.html 复制过来改名
+├── manifest.json   ← AppID + 配置（不能丢）
+└── unpackage/      ← 打包输出
+```
+
+每次更新就是把新的 `布雷斯.html` 覆盖 `index.html`，然后云打包。
+
+---
+
 ## 写在最后
 
-从第一个版本到现在，这个单文件从 4600 行涨到了 ~8200 行，170KB 变成了 ~340KB。底层从 localStorage 换成了 IndexedDB，从单房间扩展到了平行宇宙 + 时间线 + 共享待办 + 共享歌单。API 挂了不再弹 toast 而是"走神了"，发消息不再卡而是增量渲染。
+从第一个版本到现在，这个单文件从 4600 行涨到了 ~8200 行，170KB 变成了 ~340KB。它不仅是一个浏览器能打开的 HTML，也是一个能装进手机的 APK。底层从 localStorage 换成了 IndexedDB，从单房间扩展到了平行宇宙 + 时间线 + 共享待办 + 共享歌单，切智能体不会再串台，API 挂了不再弹 toast 而是"走神了"，发消息不再卡而是增量渲染。
 
 有时候回头看最早写的代码——变量命名随心所欲、函数没有错误处理、API 调用连 `r.ok` 都不检查。改 bug 的过程就是修自己以前留下的坑。最大的坑是 IndexedDB 迁移——第一版漏掉了 20+ 个 key 的映射，用户打开只看到聊天记录，朋友圈和日记全空。第二版被 `loadData` 覆盖 `activeRoomId` 的竞态坑了三天。修好之后加了自动检测和 localStorage 强制恢复，再也不会丢数据了。
 
