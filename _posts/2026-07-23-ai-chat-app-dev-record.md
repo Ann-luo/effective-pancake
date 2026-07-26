@@ -2199,9 +2199,62 @@ transactions.unshift({
 
 ---
 
+## 三十三、三个回头箭：回归 Bug 排查记
+
+裁剪功能加上去之后，手机端出现了一连串奇怪的故障——所有上传按钮按不了、导入导出没反应、礼物只有咖啡能送出。花了大半天排查，三个 bug 根因各不相同，但有一个共同点：**都不是裁剪逻辑的问题，而是"加新东西时顺带改了别的，没意识到影响面"。**
+
+### Bug 1：全屏透明层拦截所有触摸
+
+裁剪浮层为了隐藏时能顺畅过渡，用了 `display: flex; opacity: 0; z-index: -1; pointer-events: none` 而不是 `display: none`。桌面端完全正常——`pointer-events: none` 让所有点击穿透。但某些 Android WebView 在触摸 hit-test 时不认 `pointer-events: none`——一个 `position: fixed; inset: 0` 的 flex 容器即使完全透明、z-index 为负，仍会拦截所有触摸事件。
+
+整个手机端的导入、导出、上传按钮全部因为这个透明层失效——用户点任何按钮，触摸都被这个看不见的浮层吞了。
+
+修法：回到 `display: none`。隐藏时不渲染，不需要任何触摸穿透技巧。
+
+### Bug 2：`_isApp` 永远为 false
+
+`_isApp` 是一个 IIFE，在脚本加载时同步执行：
+
+```javascript
+var _isApp = (function() {
+  try { return !!(navigator.userAgent.indexOf('Html5Plus') !== -1 || window.plus); }
+  catch(e) { return false; }
+})();
+```
+
+但 HBuilder 的 `window.plus` 是**异步注入**的——`plusready` 事件触发之后才可用。IIFE 在脚本解析阶段运行，此时 `plus` 还不存在。如果 user agent 里也没有 `Html5Plus` 字符串（部分 WebView 配置或新版 HBuilder 可能没有），`_isApp` 就永远是 `false`。
+
+后果：APK 里导出功能走浏览器路径（` <a download>`）→ WebView 里没有系统下载管理器 → 文件保存不触发。导入的 `el.click()` 也被 WebView 安全策略拦截 → 文件选择器弹不出来。
+
+修法：加一行 `plusready` 监听，异步修正 `_isApp = true`。
+
+### Bug 3：`adjustAffection` 未定义
+
+`useGift` 函数里有这行：
+
+```javascript
+if (gift.affection > 0) adjustAffection(gift.affection);
+```
+
+但 `adjustAffection` 在整个 8900 行的文件里**从未被定义**。为什么一直没发现？因为咖啡的 `affection: 0`，守卫条件 `gift.affection > 0` 为 false，跳过了这个调用。咖啡能正常送出。
+
+蛋糕（`affection: 1`）、玫瑰（`affection: 2`）、手写信、星星——全部崩在 `adjustAffection` 这一行。`ReferenceError` 导致函数提前返回，`_lastUsedGift` 没设，AI 永远不知道你送了礼物。更糟的是礼物已经从背包里扣掉了，`setMood` 里触发的 `saveData` 把扣除后的库存持久化了——**礼物被吃了，没有任何反馈。**
+
+修法：加一行 `function adjustAffection(delta) { affectionLevel = Math.min(10, Math.max(1, affectionLevel + delta)); }`。
+
+### 三个 bug 的共同特征
+
+1. **不是逻辑错误，是"没考虑到"。** 裁剪浮层的 CSS 写法在桌面端完全正常；`_isApp` 在旧版 HBuilder 或 user agent 含关键字的设备上正常；`adjustAffection` 问题被咖啡的 `affection: 0` 完美掩盖。
+
+2. **影响面被低估。** 改一个 CSS 属性 → 全站触摸失效。一个未定义函数 → 四件礼物全部报废。一个 IIFE 的执行时机 → 整个 APK 的导入导出瘫痪。
+
+3. **缺乏防御性编码。** `adjustAffection` 如果先检查 `typeof adjustAffection === 'function'`，或者用一个 `try-catch`，至少不会静默失败。
+
+---
+
 ## 写在最后
 
-从第一个版本到现在，这个单文件从 4600 行涨到了 ~8900 行，170KB 变成了 ~370KB。它不仅是一个浏览器能打开的 HTML，也是一个能装进手机的 APK。底层从 localStorage 换成了 IndexedDB，从单房间扩展到了平行宇宙 + 时间线 + 共享待办 + 共享歌单 + 钱包系统 + 图片裁剪。头像不会再裁歪了，礼物不用等即时回复了。
+从第一个版本到现在，这个单文件从 4600 行涨到了 ~8900 行，170KB 变成了 ~370KB。它经历了 33 个章节记录的功能迭代，也经历了无数次"修了一个功能、坏了三个别的"的回归排查。最近一次是三个回归 bug 同时发作——全站触摸被透明层拦截、APK 导入导出因为 `_isApp` 误判全部走错路径、四个礼物因为一个未定义函数静默报废。三个 bug 修了 7 行代码，排查花了大半天。
 
 做这个东西最大的感受：**AI 编程最大的门槛不是技术，是耐心。** 大部分功能不难，但要做对、做顺、不出 bug，需要反复调、反复测。一个 Prompt 的措辞可能要改三版，一个迁移函数可能要重写两次，六个连锁 bug 要调三天。但每次修好一个坑，你对这个系统的理解就深一层。
 
