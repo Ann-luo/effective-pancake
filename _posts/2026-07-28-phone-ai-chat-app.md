@@ -54,7 +54,7 @@ tags: [HTML, AI, 开源]
 
 ## 打包成 APK
 
-用 HBuilder X 打开 `phone.html` → 发行 → 原生 App-云打包。详见 [HBuilder 本地调试实录](/effective-pancake/2026/07/27/hbuilder-local-debug.html)。
+用 HBuilder X 打开 `phone.html` → 发行 → 原生 App-云打包。详见 [HBuilder 本地调试实录](/effective-pancake/claude%20code/ai%E5%B7%A5%E5%85%B7/2026/07/27/hbuilder-local-debug.html)。
 
 ---
 
