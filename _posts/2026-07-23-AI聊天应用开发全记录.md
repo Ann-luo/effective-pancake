@@ -2484,6 +2484,54 @@ API 回复作为 AI 消息直接插入聊天，`_pendingGifts` 保留作降级�
 
 ---
 
+## 三十七、图片上传修复：裁剪器移除 + 等比缩放
+
+用户反馈所有头像上传全部失效——用户头像、智能体头像、聊天背景、锁屏壁纸，浏览器和 APK 都不行。唯独朋友圈图片上传正常。
+
+### 排查：不是 input 触发的问题
+
+一开始怀疑是 `display:none` 的 file input 在 WebView 里 `.click()` 不触发——这是之前朋友圈图片上传的根因。于是把四个上传入口全部改成和朋友圈一样的 opacity-0 覆盖方案。结果还是不行。
+
+打开浏览器 F12 控制台，没有任何报错。说明 onclick 触发了、文件选择器弹了、图片也读了。
+
+### 定位：裁剪器
+
+对照备份版本发现——能用的备份没有图片裁剪器（`showImageCropper`），不能用的当前版本有。裁剪器是一个全屏浮层，`position: fixed; inset: 0; z-index: 999`，让用户拖拽移动、双指缩放来选取裁剪区域。
+
+问题出在 `file://` 协议下 Canvas 的 `toDataURL` 在某些浏览器/WebView 中受限。裁剪器内部用 `img.src = dataUrl` 加载图片再渲染到 Canvas——`file://` 协议下这个 data URL 可能被浏览器当作跨域资源拒绝加载，`img.onerror` 触发，裁剪器显示一片黑。
+
+修了 `img.onerror` 处理、加了 overlay 状态重置——仍然"图片加载失败"。
+
+### 方案：去掉裁剪器，改成等比缩放
+
+四个上传函数（`uploadAvatar`、`setLockWallpaper`、`setChatBackground`，布雷斯头像也走 `uploadAvatar`）全部去掉 `showImageCropper` 调用，改成 FileReader → Image → Canvas 等比缩放 → 直接保存。
+
+原来的中心裁切（取图片中间 200×200 正方形）也改成了等比缩放——整张图缩到目标尺寸以内，不切任何部分。头像最长边 200px，锁屏 400px，聊天背景 800px。JPEG 质量 0.5-0.6。
+
+```javascript
+// 改前：中心裁切
+var size = Math.min(img.width, img.height, 200);
+ctx.drawImage(img, (img.width-size)/2, (img.height-size)/2, size, size, 0, 0, size, size);
+
+// 改后：等比缩放
+var scale = Math.min(200 / img.width, 200 / img.height, 1);
+canvas.width = Math.round(img.width * scale);
+canvas.height = Math.round(img.height * scale);
+ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+```
+
+### 恢复默认也补全了
+
+用户头像之前没有"恢复默认"按钮——智能体头像、锁屏壁纸、聊天背景都有，唯独用户头像缺。`clearAvatar('user')` 函数早就写好了，只是 HTML 里没放按钮。补了一行。
+
+### 经验
+
+1. **`file://` 协议的坑比想象的多。** Canvas data URL 跨域、Blob URL 下载被拒、file input 的 `.click()` 被安全策略拦截——本地开发的便利性和浏览器安全沙箱一直在打架。
+2. **复杂 UI 组件增加失败面。** 裁剪器在线上环境（HTTP/HTTPS）完全正常，在 `file://` 下挂了。全屏浮层 + Canvas 操作 + 触摸事件，三个环节每个都可能出问题。
+3. **有备份真好。** 对照一眼就看出差异——裁剪器是多出来的那部分。没备份的话要排查很久。
+
+---
+
 ## 写在最后
 
 从第一个版本到现在，这个单文件从 4600 行涨到了 ~9300 行，170KB 变成了 ~380KB。它经历了 34 个章节记录的功能迭代，也经历了无数次"修了一个功能、坏了三个别的"的回归排查。最近一次是三个回归 bug 同时发作——全站触摸被透明层拦截、APK 导入导出因为 `_isApp` 误判全部走错路径、四个礼物因为一个未定义函数静默报废。三个 bug 修了 7 行代码，排查花了大半天。
