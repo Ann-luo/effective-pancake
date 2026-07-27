@@ -3,7 +3,7 @@ layout: post
 title: "HBuilder 本地调试实录 — 不消耗云打包额度"
 date: 2026-07-27 12:00:00 +0800
 categories: [Claude Code, AI工具]
-tags: [HBuilder, Android, AVD, APK, 调试, 模拟器]
+tags: [HBuilder, Android, AVD, APK, 调试, 模拟器, 网络]
 ---
 # HBuilder 本地调试实录 — 不消耗云打包额度
 
@@ -300,3 +300,156 @@ C:\Users\你的用户名\.android\avd\Pixel_API_35.avd\
 ---
 
 **That is it.** 从删不掉雷电文件夹的郁闷，到 BlueStacks 反复 `error: closed`，到最终靠 AVD 命令行装出一套干净可用的调试环境 — 绕了一大圈，但全是可复现的步骤。下次谁再问"HBuilder 怎么不消耗额度调试"，把这篇文章甩给他。
+
+## 八、第四翻车 + 终极修复：AVD 网络不通
+
+前面说"AVD 的 ADB reverse 完美支持" — 确实，ADB 通道一路畅通。但跑起来之后发现：**模拟器上不了网**。这是坑中坑。
+
+### 8.1 现象
+
+模拟器里的 HTML 应用 `fetch('https://api.deepseek.com/v1/chat/completions')` 请求失败。一排查：
+
+```powershell
+> adb shell ping api.deepseek.com
+ping: unknown host api.deepseek.com
+> adb shell ping 223.5.5.5
+connect: Network is unreachable
+> adb shell ip addr show eth0
+eth0: <BROADCAST,MULTICAST> state DOWN
+```
+
+网卡都没起来，更别说 DNS 了。
+
+### 8.2 试过的所有方法（全失败了）
+
+按时间线排列：
+
+| 尝试 | 方法 | 结果 |
+|------|------|------|
+| 1 | 冷启动 `-no-snapshot` | eth0 仍 DOWN |
+| 2 | `-wipe-data` 全清冷启动 | eth0 仍 DOWN |
+| 3 | `adb root` + `ip link set eth0 up` + 手工配 IP | eth0 UP，但 `ip route add default via 10.0.2.2` 报 Network unreachable |
+| 4 | 删掉 AVD 重建 + `-engine classic` | FATAL: classic 引擎不支持 x86_64 |
+| 5 | 重建 AVD 正常冷启动 | eth0 UP + IP 自动分配，但路由不通 |
+| 6 | QEMU `-netdev user,id=mynet` 直传参数 | 无变化 |
+| 7 | `-dns-server 223.5.5.5` 参数注入 | DNS 能设上但 eth0 不通也没用 |
+| 8 | 下载 Android 34 镜像（降级测试） | Google CDN 下到 700MB 断了，重试也一样 |
+| 9 | 下载 Android 33 镜像 | 同上，网络不稳 |
+
+期间还发现一个槽点：**每次删 AVD 重建，`hw.keyboard` 和 `hw.gpu.enabled` 都会被重置回 `no`**，键盘又不能用了。得关模拟器 → 改 config.ini → `-no-snapshot-load` 冷启动才能恢复。
+
+### 8.3 突破口
+
+排查到 `dumpsys connectivity`，看见一行刺眼的输出：
+
+```
+Active default network: none
+```
+
+系统里 Wi-Fi 驱动报了一堆错（`Unknown iface name: wlan0`），蜂窝网络没有 SIM 卡也不会工作。eth0 虽然网卡起来了、IP 配好了、路由也设了——但 Android 的 `ConnectivityService` 根本不知道它的存在。以太网服务（`cmd ethernet`）在 Android 35 的 Google APIs 镜像里直接没包含。
+
+我把关键日志给截出来了：
+
+```bash
+> adb shell dumpsys connectivity
+Active default network: none
+Current Networks:
+# ← 空的！没有任何注册的网络
+```
+
+然后死马当活马医地试了一行：
+
+```bash
+> adb shell svc wifi disable
+```
+
+Boom——`dumpsys connectivity` 变了：
+
+```
+Active default network: 101
+```
+
+系统终于找到了一个能用的网络。再试网络：
+
+```bash
+> adb shell ping baidu.com
+# baidu.com resolved to 110.242.74.102 ← DNS 通了！！！
+# 但 ping 100% 丢包 ← ICMP 被 QEMU SLIRP 拦了
+
+> adb shell am start -a android.intent.action.VIEW -d https://www.baidu.com
+# Chrome 弹出来，百度页面加载成功！！！
+```
+
+### 8.4 根因分析
+
+**Android 35 的 "Google APIs" 系统镜像的 Wi-Fi HAL 实现有 bug。** Wi-Fi 驱动一直在尝试初始化但反复失败（`Failed to register radio mode change callback`），同时**阻塞了整个网络栈**，导致 `ConnectivityService` 没有注册任何网络。
+
+关掉 Wi-Fi 之后，系统强制 fallback 到了一个隐藏的网络提供者（网络 ID 101）——这个提供者绑定了 eth0 接口。
+
+UDP 通路（DNS）是通的，TCP（HTTP/HTTPS）也是通的，只有 ICMP（ping）被 QEMU 的 SLIRP 虚拟网络栈屏蔽了。**ping 不通不代表网络不通，要实打实用 TCP 去测。**
+
+### 8.5 持久化
+
+为防重启后 Wi-Fi 又活过来，写死到系统设置：
+
+```bash
+adb root
+adb shell settings put global wifi_on 0
+adb shell settings put global wifi_scan_always_enabled 0
+```
+
+这样 `svc wifi disable` 的效果就是永久的了。
+
+### 8.6 键盘配置容易丢
+
+每次重建 AVD（比如删了重新 `avdmanager create`），`config.ini` 里的键盘和 GPU 配置都会被重置成默认值。修复步骤：
+
+```powershell
+# 关模拟器
+Get-Process -Name "emulator" | Stop-Process -Force
+
+# 改配置
+$config = "$env:USERPROFILE\.android\avd\Pixel_API_35.avd\config.ini"
+(Get-Content $config) -replace 'hw\.keyboard=no', 'hw.keyboard=yes' `
+                      -replace 'hw\.gpu\.enabled=no', 'hw.gpu.enabled=yes' `
+| Set-Content $config
+
+# 冷启动（不要从快照恢复，否则旧配置继续生效）
+emulator -avd Pixel_API_35 -no-snapshot-load
+```
+
+正常关机后配置会写进新快照，下次就不需要 `-no-snapshot-load` 了。
+
+### 8.7 关于剪贴板
+
+AVD 模拟器默认就支持宿主机和模拟器之间的剪贴板共享，**不需要额外配置**。Ctrl+C/V 直接用。如果失效了，模拟器窗口菜单 → "Clipboard" 确认勾上了。
+
+### 8.8 下载镜像失败的教训
+
+如果 Google CDN 下载镜像老是断，可能换成 `default` 类型的镜像（比 `google_apis` 小）或者挂代理。最稳妥的还是等网络好的时候一次性下完，别在中途中断。
+
+---
+
+## 九、完整故障排查思维模型
+
+回头看这一整天的踩坑路线，其实可以抽象成一个排查优先级：
+
+```
+模拟器上不了网？
+  1. DNS 通不通？（ping 域名）
+     └─ 不通 → ping IP 通不通？
+        └─ 不通 → 网卡起来了没？（ip addr）
+           └─ 没起来 → 路由通不通？（ip route）
+  2. DNS 通但 TCP 不通？
+     └─ 用浏览器打开一个网页试试，别只信 ping
+  3. 什么都不通？
+     └─ dumpsys connectivity 看 Active default network
+        └─ none → 系统没有注册网络 → 关 Wi-Fi 试试
+```
+
+最深的坑是**信了 ping**——它 100% 丢包不代表网络真断了，只是 ICMP 被 SLIRP 拦了。拿 TCP（浏览器/curl）去测才是真金。
+
+---
+
+**最终结论：** 从雷电的删不掉，到 BlueStacks 的 `error: closed`，到 AVD 的网络 `Active default network: none`，到一行 `svc wifi disable` 解决问题——兜了一大圈，但每一步排查都有明确的线索可循。现在 HBuilder X 点"运行到手机或模拟器"，ADB reverse 正常，模拟器网络正常，API 请求正常，0 额度消耗。到此为止，这套调试环境算是真正生产就绪了。
+
