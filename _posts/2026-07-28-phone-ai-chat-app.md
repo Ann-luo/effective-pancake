@@ -6,7 +6,7 @@ categories: [Claude Code, AI工具]
 tags: [HTML, AI, 开源]
 ---
 
-[Phone](/effective-pancake/assets/phone.html) 是从[布雷斯项目](/effective-pancake/2026/07/23/ai-chat-app-dev-record.html)脱敏而来的通用版——去掉了所有角色设定和个人信息，换上通用 AI 助手人设。
+[Phone](/effective-pancake/assets/phone.html) 是从[AI 聊天应用开发项目](/effective-pancake/2026/07/23/ai-chat-app-dev-record.html)脱敏而来的通用版——去掉了所有角色设定和个人信息，换上通用 AI 助手人设。
 
 📥 **[下载 phone.html](/effective-pancake/assets/phone.html)**（右键另存为，~380KB，双击即用）
 
