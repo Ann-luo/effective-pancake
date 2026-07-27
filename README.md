@@ -43,6 +43,7 @@
 | 4.3 | [Publish Blog Skill：一条龙自动发布博客的原理](./_posts/2026-06-10-publish-blog-skill.md) | Skill 设计思路 — 怎么让 AI 写文章不漏改一个文件 |
 | 4.4 | [从零到一：AI 聊天应用全栈开发记录](./_posts/2026-07-23-ai-chat-app-dev-record.md) | 单文件 ~9300 行，含多智能体 + 流式 + 多气泡 + 沉默 + 日记 + 朋友圈 + 锁屏 + IndexedDB + 平行宇宙 + 时间线 + 共享待办 + 共享歌单 + 钱包系统 + 图片裁剪 + 礼物互动 + 导出统一 + APK 自适应 + 导入全覆盖 |
 | 4.5 | [HBuilder 本地调试实录 — 不消耗云打包额度](./_posts/2026-07-27-hbuilder-local-debug.md) | Android SDK + AVD 命令行搭建，零额度反复调试 APK |
+| 4.6 | 📥 [Phone：单文件 AI 聊天应用](./_posts/2026-07-28-phone-ai-chat-app.md) | [下载 phone.html](./assets/phone.html) · 脱敏通用版，双击即用 |
 
 ### 五、杂项
 
@@ -112,6 +113,7 @@ effective-pancake/
 │   ├── 2026-07-23-ai-chat-app-dev-record.md       (4.4) AI 聊天应用开发记录
 │   ├── 2026-07-23-AI聊天应用开发全记录.md               (4.4) 同上（中文完整版）
 │   ├── 2026-07-27-hbuilder-local-debug.md           (4.5) HBuilder 本地调试实录
+│   ├── 2026-07-28-phone-ai-chat-app.md               (4.6) Phone：脱敏通用版
 │   ├── 2026-06-11-codex-qq-messenger-debug.md          (6.1) Codex 控制 QQ 发消息
 │   ├── 2026-06-10-ai-tea-room.md                     (5.1) AI 茶馆夜话
 │   └── 2026-06-12-跟AI学编程的第一天.md                 (7.1) 跟 AI 学编程
@@ -121,6 +123,7 @@ effective-pancake/
 │   └── 重置系统和iOS的区别.md
 │
 ├── assets/                  ← 附件 / 原始记录
+│   ├── phone.html                                     (4.6) 📥 脱敏通用版 AI 聊天应用
 │   ├── codex-cc-2026-06-10.txt                       (5.2) AI 茶馆夜话聊天记录
 │   ├── codex-qq-2026-06-11.txt                       (6.3) Codex QQ 发消息调试记录
 │   ├── ai-学编程-聊天记录-2026-06-12.txt              (7.2) Skills 学习聊天记录
