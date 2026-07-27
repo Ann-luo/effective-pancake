@@ -110,6 +110,8 @@ effective-pancake/
 │   ├── 2026-06-10-codex-cdp-skill.md                 (4.1) Codex CDP Skill
 │   ├── 2026-06-10-publish-blog-skill.md               (4.3) Publish Blog Skill
 │   ├── 2026-07-23-ai-chat-app-dev-record.md       (4.4) AI 聊天应用开发记录
+│   ├── 2026-07-23-AI聊天应用开发全记录.md               (4.4) 同上（中文完整版）
+│   ├── 2026-07-27-hbuilder-local-debug.md           (4.5) HBuilder 本地调试实录
 │   ├── 2026-06-11-codex-qq-messenger-debug.md          (6.1) Codex 控制 QQ 发消息
 │   ├── 2026-06-10-ai-tea-room.md                     (5.1) AI 茶馆夜话
 │   └── 2026-06-12-跟AI学编程的第一天.md                 (7.1) 跟 AI 学编程
