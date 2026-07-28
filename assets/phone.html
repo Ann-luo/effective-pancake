@@ -3837,25 +3837,19 @@ function switchPage(name) {
 
   // Animate out the current page
   const currentPage = document.querySelector('.page.active');
-  if (currentPage && !_isApp) {
+  if (currentPage) {
     currentPage.classList.add('slide-out');
     currentPage.addEventListener('animationend', function handler() {
       currentPage.classList.remove('active', 'slide-out');
       currentPage.removeEventListener('animationend', handler);
     }, { once: true });
-  } else if (currentPage) {
-    currentPage.classList.remove('active');
   }
 
   // Activate the new page
   document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
   if (targetPage) {
-    if (_isApp) {
-      targetPage.classList.add('active'); // APK: no animation, instant switch
-    } else {
-      targetPage.classList.add('active', 'slide-in');
-      targetPage.addEventListener('animationend', () => targetPage.classList.remove('slide-in'), { once: true });
-    }
+    targetPage.classList.add('active', 'slide-in');
+    targetPage.addEventListener('animationend', () => targetPage.classList.remove('slide-in'), { once: true });
   }
 
   const tabs = document.querySelectorAll('.tab-item');
