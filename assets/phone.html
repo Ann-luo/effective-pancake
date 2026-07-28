@@ -101,8 +101,8 @@
     .page.active { display: flex; z-index: 1; }
     .page.slide-in { animation: pageSlideIn .28s ease-out; z-index: 2; }
     .page.slide-out { animation: pageSlideOut .28s ease-in; z-index: 1; }
-    @keyframes pageSlideIn { 0% { transform: translateX(30%); opacity: 0.7; } 100% { transform: translateX(0); opacity: 1; } }
-    @keyframes pageSlideOut { 0% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(-30%); opacity: 0.7; } }
+    @keyframes pageSlideIn { 0% { transform: translateX(30%); } 100% { transform: translateX(0); } }
+    @keyframes pageSlideOut { 0% { transform: translateX(0); } 100% { transform: translateX(-30%); } }
 
     /* ============ Chat Page ============ */
     #pageChat { background: var(--wechat-bg); }
@@ -3865,7 +3865,7 @@ function switchPage(name) {
 
   // Delay heavy renders until slide animation ends
   if (name === 'chat') renderPageChat();
-  if (name === 'timeline') { setTimeout(function() { renderTimelineCalendar(); showTimelineToday(); }, 300); }
+  if (name === 'timeline') { renderTimelineCalendar(); showTimelineToday(); }
 
   // Close overlays
   hidePlusMenu();
