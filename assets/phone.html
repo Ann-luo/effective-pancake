@@ -3842,6 +3842,7 @@ function switchPage(name) {
   if (name === 'todo') renderTodoPage();
   if (name === 'playlist') renderPlaylistPage();
   if (name === 'wallet') renderWalletPage();
+  if (name === 'timeline') { renderTimelineCalendar(); showTimelineToday(); }
 
   // Animate out the current page
   const currentPage = document.querySelector('.page.active');
@@ -3856,8 +3857,12 @@ function switchPage(name) {
   // Activate the new page
   document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
   if (targetPage) {
-    targetPage.classList.add('active', 'slide-in');
-    targetPage.addEventListener('animationend', () => targetPage.classList.remove('slide-in'), { once: true });
+    if (name === 'timeline') {
+      targetPage.classList.add('active'); // no animation
+    } else {
+      targetPage.classList.add('active', 'slide-in');
+      targetPage.addEventListener('animationend', () => targetPage.classList.remove('slide-in'), { once: true });
+    }
   }
 
   const tabs = document.querySelectorAll('.tab-item');
@@ -3865,7 +3870,6 @@ function switchPage(name) {
 
   // Delay heavy renders until slide animation ends
   if (name === 'chat') renderPageChat();
-  if (name === 'timeline') { renderTimelineCalendar(); showTimelineToday(); }
 
   // Close overlays
   hidePlusMenu();
