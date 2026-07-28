@@ -3835,6 +3835,9 @@ function switchPage(name) {
   const targetPage = document.getElementById(pageMap[name]);
   if (targetPage && targetPage.classList.contains('active')) return;
 
+  // APK: pre-render timeline before activation (WebView paints empty page otherwise)
+  if (_isApp && name === 'timeline') { renderTimelineCalendar(); showTimelineToday(); }
+
   // Animate out the current page
   const currentPage = document.querySelector('.page.active');
   if (currentPage) {
@@ -3862,7 +3865,7 @@ function switchPage(name) {
     renderMoments();
   }
   if (name === 'diary') renderDiaryPage();
-  if (name === 'timeline') { renderTimelineCalendar(); showTimelineToday(); }
+  if (name === 'timeline' && !_isApp) { setTimeout(function() { renderTimelineCalendar(); showTimelineToday(); }, 50); }
   if (name === 'profile') renderProfilePage();
   if (name === 'chat') renderPageChat();
   if (name === 'todo') renderTodoPage();
