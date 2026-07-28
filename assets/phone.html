@@ -2338,7 +2338,7 @@
       <div class="chat-header">
         <span class="back" style="visibility:hidden;">‹</span>
         <div class="avatar" id="bresAvatar" onclick="handleAvatarClick()">
-          🤖<span class="dot"></span>
+          🐍<span class="dot"></span>
         </div>
         <div class="info" onclick="showAgentList()">
           <div class="name"><span id="chatHeaderName">AI助手</span> <span id="moodIcon" style="font-size:14px;">💕</span></div>
@@ -2378,6 +2378,7 @@
       <!-- Quick Replies -->
       <div class="quick-replies" id="quickReplies"></div>
 
+      <div id="quoteBar" style="display:none;align-items:center;padding:6px 12px;background:#f5f5f5;font-size:12px;border-top:1px solid #e0e0e0;gap:8px;"></div>
       <!-- Input Area -->
       <div class="chat-input-area" id="inputArea">
         <button class="plus-btn" onclick="togglePlusMenu()">➕</button>
@@ -2484,12 +2485,25 @@
           </div>
         </div>
         <div class="profile-menu" style="margin-top:10px;">
+          <div class="pm-row" onclick="showStarredMessages()">
+            <span class="pmr-icon">⭐</span>
+            <span class="pmr-label">我的收藏</span>
+            <span class="pmr-value" id="starredCount"></span>
+            <span class="pmr-arrow">›</span>
+          </div>
+          <div class="pm-row" onclick="showYearReport()">
+            <span class="pmr-icon">📊</span>
+            <span class="pmr-label">年度报告</span>
+            <span class="pmr-value" id="yearReportSummary"></span>
+            <span class="pmr-arrow">›</span>
+          </div>
           <div class="pm-row" onclick="toggleSettings()">
             <span class="pmr-icon">⚙️</span>
             <span class="pmr-label">设置</span>
             <span class="pmr-arrow">›</span>
           </div>
         </div>
+        <div id="topicTagsCloud" style="padding:8px 16px;display:flex;flex-wrap:wrap;gap:6px;"></div>
         <div class="profile-menu" style="margin-top:10px;">
           <div class="pm-row" onclick="showAchievements()">
             <span class="pmr-icon">🏅</span>
@@ -2826,7 +2840,7 @@
         <label style="font-weight:600;font-size:14px;">🤖 智能体管理</label>
       </div>
       <div id="agentSelector" style="background:#f7f7f7;border-radius:10px;padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="showAgentList()">
-        <span id="agentSelectorAvatar" style="font-size:24px;">🤖</span>
+        <span id="agentSelectorAvatar" style="font-size:24px;">🐍</span>
         <span id="agentSelectorName" style="flex:1;font-weight:600;">AI助手</span>
         <span style="color:#ccc;font-size:14px;">›</span>
       </div>
@@ -2924,6 +2938,12 @@
         </div>
       </div>
 
+      <div class="field-row">
+        <label>🏷️ 自动提取话题标签</label>
+        <div class="toggle" id="topicTagsToggle" onclick="toggleTopicTags()">
+          <div class="knob"></div>
+        </div>
+      </div>
       <div class="divider"></div>
       <div class="field">
         <label style="font-weight:600;font-size:14px;">🌡️ 模型参数</label>
@@ -3058,6 +3078,7 @@
       </div>
       <div class="btn-row" style="margin-top:6px;">
         <button class="secondary" onclick="exportAsImage()">📸 导出长图</button>
+        <button class="secondary" onclick="exportSummary()">📝 导出摘要</button>
         <button class="danger" onclick="clearAll()">🗑️ 清空聊天</button>
       </div>
       <div style="text-align:center;margin-top:12px;font-size:11px;color:#bbb;">
@@ -3141,8 +3162,10 @@ const GLOBAL_SETTINGS_KEY = 'bles_global_settings';
 let agents = [];
 let activeAgentId = 'bres';
 
-// Default persona template (generic, customize in agent settings)
+// Default persona template (generic) (preserved as migration source)
 const DEFAULT_BRES_PERSONA = `你是一个友好的AI助手。你温和、体贴、善于倾听。
+
+你是一个友好的AI助手。你温和、体贴、善于倾听。
 
 【对话风格——像真人发微信，不要像在写小说】
 - 用口语化的中文发微信：短句为主，语气词自然带（嘛、呀、呢、吧），可以发一两个字也可以发两三句
@@ -3172,6 +3195,7 @@ let playlist = []; // { id, title, url, platform, thumbnail, addedBy, addedAt }
 let transactions = []; // { id, type, amount, balance, description, relatedMsgId, time }
 let giftInventory = []; // { giftId, name, icon, qty } — purchased gifts not yet used
 let giftHistory = []; // { giftId, name, icon, time, bonus } — sent gift log
+let starredMessages = []; // { msgId } — user-starred message IDs
 
 function agentKey(baseKey) {
   return 'agent_' + activeAgentId + '_' + baseKey;
@@ -3242,8 +3266,20 @@ function idbDelete(key) {
   });
 }
 
-// ── Migration: localStorage → IndexedDB (disabled — fresh start) ────
-function idbNeedsMigration() { return Promise.resolve(false); }
+// ── Migration: localStorage → IndexedDB ────────────────────────────
+function idbNeedsMigration() {
+  return idbGet('_migrated').then(function(v) {
+    if (!v) return true; // Never migrated
+    // Check if migration was the broken v1 — key global_settings missing
+    return idbGet('global_settings').then(function(gs) {
+      if (!gs) {
+        // Broken migration detected — force re-migrate
+        return idbDelete('_migrated').then(function() { return true; });
+      }
+      return false;
+    });
+  });
+}
 
 function _lsGet(key, parse) {
   try {
@@ -3554,6 +3590,9 @@ async function loadData() {
       transactions = Array.isArray(data.transactions) ? data.transactions : [];
       giftInventory = Array.isArray(data.giftInventory) ? data.giftInventory : [];
       giftHistory = Array.isArray(data.giftHistory) ? data.giftHistory : [];
+      starredMessages = Array.isArray(data.starredMessages) ? data.starredMessages : [];
+      topicTags = Array.isArray(data.topicTags) ? data.topicTags : [];
+      if (typeof data.topicTagsEnabled === 'boolean') topicTagsEnabled = data.topicTagsEnabled;
     }
   } catch(e) { console.warn('loadData room failed', e); }
 
@@ -3575,7 +3614,7 @@ function saveRoomData() {
     msgReactions: msgReactions, quickReplies: quickReplies,
     achievements: achievements, scheduledMessages: scheduledMessages,
     moodLog: moodLog, todos: todos, playlist: playlist,
-    transactions: transactions, giftInventory: giftInventory, giftHistory: giftHistory,
+    transactions: transactions, giftInventory: giftInventory, giftHistory: giftHistory, starredMessages: starredMessages, topicTags: topicTags, topicTagsEnabled: topicTagsEnabled,
   });
 }
 
@@ -3631,6 +3670,8 @@ function switchRoom(roomId) {
   transactions = [];
   giftInventory = [];
   giftHistory = [];
+  starredMessages = [];
+  topicTags = [];
   _pendingGifts = [];
   _aiGiftLog = null;
   _claimedGifts = {};
@@ -3751,7 +3792,7 @@ function switchAgent(newAgentId) {
   checkinData = { lastDate: '', streak: 0 };
   proactiveConfig = { enabled: true, lastProactiveTime: 0 };
   scheduledMessages = [];
-  todos = []; playlist = []; transactions = []; giftInventory = []; giftHistory = []; _pendingGifts = []; _aiGiftLog = null; _claimedGifts = {};
+  todos = []; playlist = []; transactions = []; giftInventory = []; giftHistory = []; starredMessages = []; _pendingGifts = []; _aiGiftLog = null; _claimedGifts = {};
   _currentPlayingId = null;
   var ppDiv2 = document.getElementById('playlistNowPlaying');
   if (ppDiv2) { ppDiv2.classList.remove('show'); }
@@ -3987,7 +4028,7 @@ function renderMessages(scrollToBottom = true) {
     if (msg.type !== 'red_packet' && msg.type !== 'gift_sent' && msg.type !== 'gift_received') {
       const del = document.createElement('div');
       del.className = 'delete-overlay';
-      del.innerHTML = '<button onclick="deleteMsg(\'' + msg.id + '\')">删除</button>';
+      del.innerHTML = '<button onclick="startQuote(\'' + msg.id + '\')">↩</button><button onclick="toggleStar(\'' + msg.id + '\');event.stopPropagation();" style="background:#f0c040;color:#333;">⭐</button><button onclick="deleteMsg(\'' + msg.id + '\')">删除</button>';
       row.appendChild(del);
     }
 
@@ -4090,7 +4131,7 @@ function appendMessageRow(msg) {
   // Delete overlay
   var del = document.createElement('div');
   del.className = 'delete-overlay';
-  del.innerHTML = '<button onclick="deleteMsg(\'' + msg.id + '\')">删除</button>';
+  del.innerHTML = '<button onclick="startQuote(\'' + msg.id + '\')">↩</button><button onclick="toggleStar(\'' + msg.id + '\');event.stopPropagation();" style="background:#f0c040;color:#333;">⭐</button><button onclick="deleteMsg(\'' + msg.id + '\')">删除</button>';
   row.appendChild(del);
 
   // Time tag
@@ -4127,6 +4168,50 @@ function deleteMsg(id) {
   renderMessages();
   showToast('已删除');
 }
+function toggleStar(msgId) {
+  var idx = starredMessages.findIndex(function(s) { return s.msgId === msgId; });
+  if (idx >= 0) { starredMessages.splice(idx, 1); showToast('已取消收藏'); }
+  else { starredMessages.push({msgId: msgId}); showToast('已收藏 ⭐'); }
+  saveData();
+}
+function showStarredMessages() {
+  if (!starredMessages.length) { showToast('没有收藏的消息 ⭐'); return; }
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;z-index:99999;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;';
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:16px;max-width:95vw;max-height:80vh;overflow-y:auto;width:360px;';
+  var html = '<b style="font-size:16px;">⭐ 我的收藏（' + starredMessages.length + '条）</b><div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">';
+  for (var i = 0; i < starredMessages.length; i++) {
+    var msg = messages.find(function(m) { return m.id === starredMessages[i].msgId; });
+    if (!msg) continue;
+    var name = msg.role === 'user' ? (userProfile.name||'我') : getAgentName();
+    var text = (msg.text||'').substring(0, 80);
+    html += '<div style="display:flex;align-items:flex-start;gap:8px;padding:8px;background:#f9f9f9;border-radius:10px;"><div style="flex:1;font-size:13px;"><span style="color:#576b95;font-weight:600;">' + name + '</span><br>' + text + '</div><button onclick="toggleStar(\'' + msg.id + '\');this.closest(\'div[style]\').parentElement.parentElement.remove();showStarredMessages();" style="border:none;background:none;cursor:pointer;font-size:16px;flex-shrink:0;">⭐</button></div>';
+  }
+  html += '</div><button onclick="this.closest(\'div[style]\').parentElement.remove()" style="margin-top:12px;width:100%;padding:10px;border-radius:10px;border:none;background:#07c160;color:#fff;font-size:14px;cursor:pointer;">关闭</button>';
+  box.innerHTML = html;
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+function startQuote(msgId) {
+  var msg = messages.find(function(m) { return m.id === msgId; });
+  if (!msg) return;
+  _pendingQuote = {msgId: msgId, text: (msg.text||'').substring(0,60), author: msg.role==='user'?(userProfile.name||'我'):getAgentName()};
+  showToast('已引用');
+  renderQuoteBar();
+}
+function cancelQuote() { _pendingQuote = null; renderQuoteBar(); }
+function renderQuoteBar() {
+  var bar = document.getElementById('quoteBar');
+  if (!bar) return;
+  if (_pendingQuote) {
+    bar.innerHTML = '<span style="color:#999;">↩ ' + _pendingQuote.author + '：' + _pendingQuote.text + '</span><span onclick="cancelQuote()" style="cursor:pointer;margin-left:8px;opacity:.5;">✕</span>';
+    bar.style.display = 'flex';
+  } else {
+    bar.style.display = 'none';
+  }
+}
 
 function clearAll() {
   var agentName = getAgentName();
@@ -4143,6 +4228,8 @@ function clearAll() {
   transactions = [];
   giftInventory = [];
   giftHistory = [];
+  starredMessages = [];
+  topicTags = [];
   _pendingGifts = [];
   _aiGiftLog = null;
   _claimedGifts = {};
@@ -4677,15 +4764,35 @@ function showSilentReply() {
 // ====================================================================
 //  Send Message
 // ====================================================================
+var QUICK_COMMANDS = {
+  '/总结': '请用2-3句话总结我们最近的聊天内容，抓重点。',
+  '/翻译': '请把下面这句话翻译成英文：',
+  '/天气': '假装你知道今天的天气，编一个有趣的天气预报回复我。',
+  '/笑话': '给我讲一个短笑话。',
+  '/夸我': '请用温暖的话夸夸我，2-3句就好。',
+  '/晚安': '跟我说晚安，温暖一点。',
+  '/早安': '跟我说早安，元气一点。',
+};
 function sendMsg(text) {
   const input = document.getElementById('msgInput');
-  const msgText = text || input.value.trim();
+  var msgText = text || input.value.trim();
   if (!msgText || isSending) return;
+
+  // Quick command: /xxx
+  if (msgText[0] === '/' && QUICK_COMMANDS[msgText]) {
+    msgText = QUICK_COMMANDS[msgText];
+  }
 
   input.value = '';
   document.getElementById('sendBtn').classList.remove('active');
   document.getElementById('emojiPanel').classList.remove('show');
   hidePlusMenu();
+
+  // Inject pending quote
+  if (_pendingQuote) {
+    msgText = '[引用：' + _pendingQuote.author + '「' + _pendingQuote.text + '」]\n' + msgText;
+    _pendingQuote = null; renderQuoteBar();
+  }
 
   const userMsg = {
     id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
@@ -4834,6 +4941,7 @@ function sendMsg(text) {
           maybeExtractMemories(msgText, msgSnapshot);
           maybeAISendRedPacket();
           maybeWriteDiary();
+          setTimeout(function() { maybeExtractTopicTags(); }, 3000);
 
           // Remaining parts: staggered insertion with random delay
           var delay = 400 + Math.random() * 500;
@@ -5570,6 +5678,7 @@ function spawnGiftParticles(emoji, count, color) {
 
 // Track pending gifts for AI context injection
 var _pendingGifts = [];
+var _pendingQuote = null; // {msgId, text, author}
 
 var _claimedGifts = {}; // prevent double-claim: {msgId: true}
 function claimReceivedGift(msgId, giftId) {
@@ -6014,6 +6123,7 @@ function showTimelineDate(dateStr) {
   }
   container.innerHTML = '<div class="timeline-date-header">' + dateStr + ' · ' + _timelineMsgs.length + ' 条消息</div>' +
     _timelineMsgs.map(function(m) { return renderTimelineMsgRow(m); }).join('');
+  container.scrollTop = 0;
 }
 
 function renderTimelineMsgRow(m) {
@@ -6042,22 +6152,19 @@ function startTimelineReplay() {
   document.getElementById('timelineSpeedLabel').textContent = '1x';
   document.getElementById('timelineReplayBar').style.display = 'flex';
   document.getElementById('timelineReplayBtn').textContent = '⏸ 停止';
+  document.getElementById('timelineMsgs').innerHTML = '<div class="timeline-date-header">' + _timelineDate + ' · 回放中...</div>';
   timelineReplayTick();
 }
 function timelineReplayTick() {
   if (_timelineReplayIdx >= _timelineMsgs.length) { stopTimelineReplay(); showToast('回放结束 📅'); return; }
   try {
+    var m = _timelineMsgs[_timelineReplayIdx];
     var container = document.getElementById('timelineMsgs');
-    var rows = container.querySelectorAll('.msg-row');
-    // Highlight current message, un-highlight previous
-    if (_timelineReplayIdx > 0 && rows[_timelineReplayIdx - 1]) {
-      rows[_timelineReplayIdx - 1].style.background = '';
-    }
-    if (rows[_timelineReplayIdx]) {
-      rows[_timelineReplayIdx].style.background = 'rgba(7,193,96,.08)';
-      rows[_timelineReplayIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  } catch(e) { /* skip */ }
+    var div = document.createElement('div');
+    div.innerHTML = renderTimelineMsgRow(m);
+    if (div.firstElementChild) container.appendChild(div.firstElementChild);
+    container.scrollTop = container.scrollHeight;
+  } catch(e) { /* skip bad messages */ }
   _timelineReplayIdx++;
   _timelineReplayTimer = setTimeout(timelineReplayTick, Math.max(200, Math.floor(1200 / _timelineReplaySpeed)));
 }
@@ -7597,27 +7704,26 @@ function toggleSearch() {
 }
 
 function doSearch() {
-  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  var q = document.getElementById('searchInput').value.trim().toLowerCase();
   clearHighlights();
   searchResults = [];
   searchIndex = -1;
   if (!q) { document.getElementById('searchNav').textContent = ''; return; }
-  const allBubbles = document.querySelectorAll('#messages .msg-row .bubble');
-  allBubbles.forEach(b => {
-    if (b.textContent.toLowerCase().includes(q)) {
-      searchResults.push(b.closest('.msg-row'));
-    }
-  });
-  if (searchResults.length > 0) {
-    document.getElementById('searchNav').textContent = '1/' + searchResults.length;
-    searchIndex = 0;
-    searchResults[0].classList.add('search-highlight');
-    searchResults[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-  } else {
-    document.getElementById('searchNav').textContent = q ? '无结果' : '';
+  var msgMatches = messages.filter(function(m) { return (m.text||'').toLowerCase().indexOf(q) !== -1; });
+  if (!msgMatches.length) { document.getElementById('searchNav').textContent = '无结果'; return; }
+  for (var i = 0; i < msgMatches.length; i++) {
+    var el = document.querySelector('[data-msg-id="' + msgMatches[i].id + '"]');
+    if (el) searchResults.push(el);
   }
+  if (searchResults.length < msgMatches.length) {
+    renderShowAll = true; renderMessages(false);
+    setTimeout(function() { doSearch(); }, 150); return;
+  }
+  searchIndex = 0;
+  searchResults[0].classList.add('search-highlight');
+  searchResults[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.getElementById('searchNav').innerHTML = '<span onclick="searchJump(-1)" style="cursor:pointer;">◀</span> 1/' + searchResults.length + ' <span onclick="searchJump(1)" style="cursor:pointer;">▶</span>';
 }
-
 function searchJump(dir) {
   if (!searchResults.length) return;
   searchResults[searchIndex].classList.remove('search-highlight');
@@ -7626,7 +7732,7 @@ function searchJump(dir) {
   if (searchIndex < 0) searchIndex = searchResults.length - 1;
   searchResults[searchIndex].classList.add('search-highlight');
   searchResults[searchIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-  document.getElementById('searchNav').textContent = (searchIndex + 1) + '/' + searchResults.length;
+  document.getElementById('searchNav').innerHTML = '<span onclick="searchJump(-1)" style="cursor:pointer;">◀</span> ' + (searchIndex+1) + '/' + searchResults.length + ' <span onclick="searchJump(1)" style="cursor:pointer;">▶</span>';
 }
 
 function clearHighlights() {
@@ -7926,6 +8032,10 @@ function renderProfilePage() {
   updateAvatars();
   renderMoodCalendar();
   renderAchievementSummary();
+  renderTopicTags();
+  var yr = getYearStats();
+  document.getElementById('yearReportSummary') && (document.getElementById('yearReportSummary').textContent = yr.totalMsgs + ' 条消息');
+  document.getElementById('starredCount') && (document.getElementById('starredCount').textContent = starredMessages.length + ' 条');
 }
 
 function doCheckin() {
@@ -7979,7 +8089,7 @@ function saveProfile() {
 const EMOJI_CATEGORIES = {
   '常用': ['😊','😂','❤️','😘','🥰','😭','🥺','🔥','💕','✨','💖','💚'],
   '情绪': ['🥰','😊','😂','😭','🥺','😤','😳','😏','🤗','😣','😌','😅'],
-  '动物': ['🐶','🐱','🐼','🐨','🐰','🦊','🐸','🐙','🦋','🐝','🦉','🐢'],
+  '动物': ['🐶','🐱','🐼','🐨','🐰','🦊','🐸','🐙','🦋','🐝','🦉','🐍'],
   '食物': ['🍰','🍕','🍜','🍦','🍓','🎂','☕','🍵','🍪','🍩','🥟','🍣'],
   '自然': ['🌸','🌿','🌈','⭐','🌙','☀️','❄️','🍂','🌺','🌊','🌲','☁️'],
   '爱心': ['💕','💖','💗','💝','💌','🫶','💚','🤍','❤️‍🔥','💘','💞','🩷'],
@@ -7997,6 +8107,7 @@ const STICKERS = [
   { emoji: '💌', label: '思念' },
   { emoji: '🌙', label: '晚安' },
   { emoji: '✨', label: '闪亮' },
+  { emoji: '🐢', label: '慢慢来' },
   { emoji: '🧹', label: '大扫除' },
   { emoji: '🪄', label: '变魔术' },
   { emoji: '📜', label: '古卷' },
@@ -8809,6 +8920,7 @@ function toggleSettings() {
     document.getElementById('diaryFreqSelect').value = diaryConfig.frequency || 'medium';
     document.getElementById('diaryAutoCleanToggle').classList.toggle('on', diaryConfig.autoClean);
     document.getElementById('diaryCleanDays').value = diaryConfig.autoCleanDays;
+    document.getElementById('topicTagsToggle').classList.toggle('on', topicTagsEnabled);
     // Quick replies
     document.getElementById('quickRepliesInput').value = quickReplies.join(', ');
     // Chat bg clear button
@@ -8889,6 +9001,71 @@ function importChat(input) {
 // ====================================================================
 //  Per-agent Memory + Config Export/Import
 // ====================================================================
+function exportSummary() {
+  if (!messages.length) { showToast('没有聊天记录可摘要'); return; }
+  if (!apiKey) { showToast('请先设置 API Key 🔑'); return; }
+  showToast('AI 正在生成摘要…');
+  var recent = messages.slice(-30).map(function(m) { return (m.role==='user'?(userProfile.name||'我'):getAgentName())+'：'+(m.text||''); }).join('\n');
+  callDeepSeek('请用3-5句话总结以下对话的要点，用中文：\n\n' + recent).then(function(reply) {
+    if (reply) {
+      var text = '📝 对话摘要\n' + new Date().toLocaleDateString('zh-CN') + '\n' + '─'.repeat(20) + '\n' + reply + '\n' + '─'.repeat(20);
+      saveFileToDevice('对话摘要_' + new Date().toISOString().slice(0,10) + '.txt', text, 'text/plain;charset=utf-8');
+    } else { showToast('生成失败，请重试'); }
+  }).catch(function() { showToast('生成失败'); });
+}
+
+function getYearStats() {
+  var totalMsgs = messages.length;
+  var firstDate = messages[0] ? new Date(messages[0].time).toLocaleDateString('zh-CN') : 'N/A';
+  var userMsgs = messages.filter(function(m){return m.role==='user';}).length;
+  var aiMsgs = totalMsgs - userMsgs;
+  var sentGifts = giftHistory.length;
+  var bonuses = giftHistory.filter(function(g){return g.bonus;}).length;
+  var redIn = transactions.filter(function(t){return t.type==='redpacket_in';}).length;
+  var redOut = transactions.filter(function(t){return t.type==='redpacket_out';}).length;
+  var lastMsg = messages.length ? new Date(messages[messages.length-1].time) : null;
+  var lastTime = lastMsg ? lastMsg.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}) : 'N/A';
+  return {totalMsgs:totalMsgs,firstDate:firstDate,userMsgs:userMsgs,aiMsgs:aiMsgs,sentGifts:sentGifts,bonuses:bonuses,redIn:redIn,redOut:redOut,lastTime:lastTime};
+}
+var topicTags = []; // [{tag, count}]
+function showYearReport() {
+  var s = getYearStats();
+  var msg = '📊 ' + getRoomName() + ' · 年度报告\n\n💬 总消息：' + s.totalMsgs + ' 条\n   我 ' + s.userMsgs + ' · AI ' + s.aiMsgs + '\n📅 从 ' + s.firstDate + ' 开始\n🕐 最晚聊到：' + s.lastTime + '\n🎁 送出礼物：' + s.sentGifts + ' 次（暴击 ' + s.bonuses + '）\n🧧 收红包 ' + s.redIn + ' · 发红包 ' + s.redOut + '\n\n（以上为当前房间「' + getRoomName() + '」的数据）';
+  alert(msg);
+}
+function renderTopicTags() {
+  var container = document.getElementById('topicTagsCloud');
+  if (!container) return;
+  if (!topicTags.length) { container.innerHTML = ''; return; }
+  var maxCount = Math.max.apply(null, topicTags.map(function(t){return t.count;}));
+  container.innerHTML = topicTags.map(function(t){
+    var size = 12 + Math.round((t.count/maxCount)*10);
+    return '<span style="font-size:'+size+'px;background:var(--input-bg);padding:4px 10px;border-radius:14px;cursor:pointer;margin:2px;" onclick="topicTagClick(\''+t.tag+'\')" title="点击搜索">#'+t.tag+'<sup>'+t.count+'</sup></span>';
+  }).join('');
+}
+function topicTagClick(tag) {
+  document.getElementById('searchInput').value = tag;
+  doSearch();
+  switchPage('chat');
+}
+function maybeExtractTopicTags() {
+  if (!topicTagsEnabled || !apiKey || messages.length < 20) return;
+  if (_lastTagExtract && (Date.now() - _lastTagExtract) < 600000) return; // 10min throttle
+  _lastTagExtract = Date.now();
+  var recent = messages.slice(-30).map(function(m){return m.text||'';}).join(' ');
+  callDeepSeek('分析以下对话，提取2-5个话题标签（每个2-4字中文），只返回JSON数组如["学习","美食"]：\n\n'+recent).then(function(reply){
+    if (!reply) return;
+    try{var tags=JSON.parse(reply);if(Array.isArray(tags)){tags.forEach(function(t){var e=topicTags.find(function(x){return x.tag===t;});if(e)e.count++;else topicTags.push({tag:t,count:1});});saveData();renderTopicTags();}}catch(e){}
+  }).catch(function(){});
+}
+var _lastTagExtract = 0;
+var topicTagsEnabled = true;
+function toggleTopicTags() {
+  topicTagsEnabled = !topicTagsEnabled;
+  document.getElementById('topicTagsToggle').classList.toggle('on', topicTagsEnabled);
+  saveData();
+}
+
 function exportMemoriesAndConfig() {
   if (!memoryStore.length && !diaryEntries.length) {
     showToast('没有记忆或日记可导出 📭'); return;
@@ -9194,7 +9371,7 @@ document.getElementById('agentEditorOverlay').addEventListener('click', () => hi
 
 
 // Version stamp — check console to verify latest code
-// Phone — a single-file AI chat app
+// Phone — single-file AI chat app
 
 // ====================================================================
 //  Status bar clock
@@ -9229,7 +9406,7 @@ try {
   }
 } catch(e) { agents = []; }
 
-// Auto-update persona template if still on old version
+// 1.5 Auto-update persona template if still on old version
 for (var ai = 0; ai < agents.length; ai++) {
   if (agents[ai].id === 'bres' && agents[ai].personaTemplate && agents[ai].personaTemplate.indexOf('你的人设背景：') !== -1) {
     agents[ai].personaTemplate = DEFAULT_BRES_PERSONA;
