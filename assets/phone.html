@@ -3183,7 +3183,7 @@ function roomKey() {
 // ═══════════════════════════════════════════════════════════════════
 //  IndexedDB Layer
 // ═══════════════════════════════════════════════════════════════════
-const IDB_NAME = 'bles_db_v1';
+const IDB_NAME = 'phone_db_v1';
 const IDB_STORE = 'data';
 let _db = null;
 let _dbReady = false;
@@ -3242,20 +3242,8 @@ function idbDelete(key) {
   });
 }
 
-// ── Migration: localStorage → IndexedDB ────────────────────────────
-function idbNeedsMigration() {
-  return idbGet('_migrated').then(function(v) {
-    if (!v) return true; // Never migrated
-    // Check if migration was the broken v1 — key global_settings missing
-    return idbGet('global_settings').then(function(gs) {
-      if (!gs) {
-        // Broken migration detected — force re-migrate
-        return idbDelete('_migrated').then(function() { return true; });
-      }
-      return false;
-    });
-  });
-}
+// ── Migration: localStorage → IndexedDB (disabled — fresh start) ────
+function idbNeedsMigration() { return Promise.resolve(false); }
 
 function _lsGet(key, parse) {
   try {
