@@ -101,8 +101,8 @@
     .page.active { display: flex; z-index: 1; }
     .page.slide-in { animation: pageSlideIn .28s ease-out; z-index: 2; }
     .page.slide-out { animation: pageSlideOut .28s ease-in; z-index: 1; }
-    @keyframes pageSlideIn { 0% { transform: translateX(30%); } 100% { transform: translateX(0); } }
-    @keyframes pageSlideOut { 0% { transform: translateX(0); } 100% { transform: translateX(-30%); } }
+    @keyframes pageSlideIn { 0% { transform: translateX(30%); opacity: 0.7; } 100% { transform: translateX(0); opacity: 1; } }
+    @keyframes pageSlideOut { 0% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(-30%); opacity: 0.7; } }
 
     /* ============ Chat Page ============ */
     #pageChat { background: var(--wechat-bg); }
@@ -3835,15 +3835,6 @@ function switchPage(name) {
   const targetPage = document.getElementById(pageMap[name]);
   if (targetPage && targetPage.classList.contains('active')) return;
 
-  // Pre-render target page content BEFORE activation (avoids flash during slide animation)
-  if (name === 'diary') renderDiaryPage();
-  if (name === 'moments') { momentsUnread = 0; updateMomentsBadge(); renderMoments(); }
-  if (name === 'profile') renderProfilePage();
-  if (name === 'todo') renderTodoPage();
-  if (name === 'playlist') renderPlaylistPage();
-  if (name === 'wallet') renderWalletPage();
-  if (name === 'timeline') { renderTimelineCalendar(); showTimelineToday(); }
-
   // Animate out the current page
   const currentPage = document.querySelector('.page.active');
   if (currentPage) {
@@ -3864,8 +3855,19 @@ function switchPage(name) {
   const tabs = document.querySelectorAll('.tab-item');
   if (tabs[tabMap[name]]) tabs[tabMap[name]].classList.add('active');
 
-  // Delay heavy renders until slide animation ends
+  // On moments switch, clear badge
+  if (name === 'moments') {
+    momentsUnread = 0;
+    updateMomentsBadge();
+    renderMoments();
+  }
+  if (name === 'diary') renderDiaryPage();
+  if (name === 'timeline') { renderTimelineCalendar(); showTimelineToday(); }
+  if (name === 'profile') renderProfilePage();
   if (name === 'chat') renderPageChat();
+  if (name === 'todo') renderTodoPage();
+  if (name === 'playlist') renderPlaylistPage();
+  if (name === 'wallet') renderWalletPage();
 
   // Close overlays
   hidePlusMenu();
