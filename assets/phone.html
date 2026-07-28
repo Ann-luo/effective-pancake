@@ -3835,6 +3835,15 @@ function switchPage(name) {
   const targetPage = document.getElementById(pageMap[name]);
   if (targetPage && targetPage.classList.contains('active')) return;
 
+  // Pre-render target page content BEFORE activation (avoids flash during slide animation)
+  if (name === 'timeline') { renderTimelineCalendar(); showTimelineToday(); }
+  if (name === 'diary') renderDiaryPage();
+  if (name === 'moments') { momentsUnread = 0; updateMomentsBadge(); renderMoments(); }
+  if (name === 'profile') renderProfilePage();
+  if (name === 'todo') renderTodoPage();
+  if (name === 'playlist') renderPlaylistPage();
+  if (name === 'wallet') renderWalletPage();
+
   // Animate out the current page
   const currentPage = document.querySelector('.page.active');
   if (currentPage) {
@@ -3855,19 +3864,8 @@ function switchPage(name) {
   const tabs = document.querySelectorAll('.tab-item');
   if (tabs[tabMap[name]]) tabs[tabMap[name]].classList.add('active');
 
-  // On moments switch, clear badge
-  if (name === 'moments') {
-    momentsUnread = 0;
-    updateMomentsBadge();
-    renderMoments();
-  }
-  if (name === 'diary') renderDiaryPage();
-  if (name === 'timeline') { setTimeout(function() { renderTimelineCalendar(); showTimelineToday(); }, 50); }
-  if (name === 'profile') renderProfilePage();
+  // Chat render stays here (needs DOM active first for scroll)
   if (name === 'chat') renderPageChat();
-  if (name === 'todo') renderTodoPage();
-  if (name === 'playlist') renderPlaylistPage();
-  if (name === 'wallet') renderWalletPage();
 
   // Close overlays
   hidePlusMenu();
