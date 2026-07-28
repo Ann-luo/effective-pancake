@@ -3848,26 +3848,30 @@ function switchPage(name) {
   // Activate the new page
   document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
   if (targetPage) {
-    targetPage.classList.add('active', 'slide-in');
-    targetPage.addEventListener('animationend', () => targetPage.classList.remove('slide-in'), { once: true });
+    if (name === 'timeline') {
+      targetPage.style.opacity = '0';
+      targetPage.style.transition = 'opacity .25s ease-out';
+      targetPage.classList.add('active');
+      renderTimelineCalendar(); showTimelineToday();
+      requestAnimationFrame(function() {
+        targetPage.style.opacity = '1';
+        setTimeout(function() { targetPage.style.transition = ''; targetPage.style.opacity = ''; }, 300);
+      });
+    } else {
+      targetPage.classList.add('active', 'slide-in');
+      targetPage.addEventListener('animationend', () => targetPage.classList.remove('slide-in'), { once: true });
+    }
   }
 
   const tabs = document.querySelectorAll('.tab-item');
   if (tabs[tabMap[name]]) tabs[tabMap[name]].classList.add('active');
 
-  // On moments switch, clear badge
   if (name === 'moments') {
     momentsUnread = 0;
     updateMomentsBadge();
     renderMoments();
   }
   if (name === 'diary') renderDiaryPage();
-  if (name === 'timeline' && targetPage) {
-    targetPage.style.opacity = '0';
-    targetPage.style.transition = 'opacity .15s';
-    renderTimelineCalendar(); showTimelineToday();
-    requestAnimationFrame(function() { targetPage.style.opacity = '1'; });
-  }
   if (name === 'profile') renderProfilePage();
   if (name === 'chat') renderPageChat();
   if (name === 'todo') renderTodoPage();
