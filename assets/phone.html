@@ -3862,7 +3862,12 @@ function switchPage(name) {
     renderMoments();
   }
   if (name === 'diary') renderDiaryPage();
-  if (name === 'timeline') { renderTimelineCalendar(); showTimelineToday(); }
+  if (name === 'timeline' && targetPage) {
+    targetPage.style.opacity = '0';
+    targetPage.style.transition = 'opacity .15s';
+    renderTimelineCalendar(); showTimelineToday();
+    requestAnimationFrame(function() { targetPage.style.opacity = '1'; });
+  }
   if (name === 'profile') renderProfilePage();
   if (name === 'chat') renderPageChat();
   if (name === 'todo') renderTodoPage();
