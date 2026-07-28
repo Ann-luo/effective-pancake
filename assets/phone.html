@@ -6035,7 +6035,9 @@ function startTimelineReplay() {
   document.getElementById('timelineSpeedLabel').textContent = '1x';
   document.getElementById('timelineReplayBar').style.display = 'flex';
   document.getElementById('timelineReplayBtn').textContent = '⏸ 停止';
-  document.getElementById('timelineMsgs').innerHTML = '<div class="timeline-date-header">' + _timelineDate + ' · 回放中...</div>';
+  // Clear and immediately show first message — avoid blank flash
+  var container = document.getElementById('timelineMsgs');
+  container.innerHTML = '';
   timelineReplayTick();
 }
 function timelineReplayTick() {
