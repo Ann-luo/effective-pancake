@@ -3888,8 +3888,7 @@ function switchPage(name) {
 function renderPageChat() {
   updateAvatars();
   updateCharacterStatus();
-  // Delay message render until slide animation ends (avoids flash)
-  setTimeout(function() { renderMessages(true); }, 50);
+  renderMessages(true);
   renderQuickReplies();
 }
 
