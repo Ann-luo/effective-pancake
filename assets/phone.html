@@ -3835,24 +3835,27 @@ function switchPage(name) {
   const targetPage = document.getElementById(pageMap[name]);
   if (targetPage && targetPage.classList.contains('active')) return;
 
-  // APK: pre-render timeline before activation (WebView paints empty page otherwise)
-  if (_isApp && name === 'timeline') { renderTimelineCalendar(); showTimelineToday(); }
-
   // Animate out the current page
   const currentPage = document.querySelector('.page.active');
-  if (currentPage) {
+  if (currentPage && !_isApp) {
     currentPage.classList.add('slide-out');
     currentPage.addEventListener('animationend', function handler() {
       currentPage.classList.remove('active', 'slide-out');
       currentPage.removeEventListener('animationend', handler);
     }, { once: true });
+  } else if (currentPage) {
+    currentPage.classList.remove('active');
   }
 
   // Activate the new page
   document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
   if (targetPage) {
-    targetPage.classList.add('active', 'slide-in');
-    targetPage.addEventListener('animationend', () => targetPage.classList.remove('slide-in'), { once: true });
+    if (_isApp) {
+      targetPage.classList.add('active'); // APK: no animation, instant switch
+    } else {
+      targetPage.classList.add('active', 'slide-in');
+      targetPage.addEventListener('animationend', () => targetPage.classList.remove('slide-in'), { once: true });
+    }
   }
 
   const tabs = document.querySelectorAll('.tab-item');
@@ -3865,7 +3868,7 @@ function switchPage(name) {
     renderMoments();
   }
   if (name === 'diary') renderDiaryPage();
-  if (name === 'timeline' && !_isApp) { setTimeout(function() { renderTimelineCalendar(); showTimelineToday(); }, 50); }
+  if (name === 'timeline') { setTimeout(function() { renderTimelineCalendar(); showTimelineToday(); }, 50); }
   if (name === 'profile') renderProfilePage();
   if (name === 'chat') renderPageChat();
   if (name === 'todo') renderTodoPage();
