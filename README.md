@@ -41,7 +41,7 @@
 | 4.1 | [Claude Code × Codex CDP Skill：跨模型通信踩坑与修复](./_posts/2026-06-10-codex-cdp-skill.md) | 自定义 Skill — 扁平文件陷阱、CDP 页面检测修复 |
 | 4.2 | 　📦 [Skill 资源包：codex-chat](./skills/codex-chat/SKILL.md) | 下载后放入 `~/.claude/skills/`，重启即可用 `/codex-chat` |
 | 4.3 | [Publish Blog Skill：一条龙自动发布博客的原理](./_posts/2026-06-10-publish-blog-skill.md) | Skill 设计思路 — 怎么让 AI 写文章不漏改一个文件 |
-| 4.4 | [从零到一：AI 聊天应用全栈开发记录](./_posts/2026-07-23-ai-chat-app-dev-record.md) | 单文件 ~9300 行，含多智能体 + 流式 + 多气泡 + 沉默 + 日记 + 朋友圈 + 锁屏 + IndexedDB + 平行宇宙 + 时间线 + 共享待办 + 共享歌单 + 钱包系统 + 图片裁剪 + 礼物互动 + 导出统一 + APK 自适应 + 导入全覆盖 |
+| 4.4 | [从零到一：AI 聊天应用全栈开发记录](./_posts/2026-07-23-AI聊天应用开发全记录.md) | 单文件 ~9300 行，含多智能体 + 流式 + 多气泡 + 沉默 + 日记 + 朋友圈 + 锁屏 + IndexedDB + 平行宇宙 + 时间线 + 共享待办 + 共享歌单 + 钱包系统 + 图片裁剪 + 礼物互动 + 导出统一 + APK 自适应 + 导入全覆盖 |
 | 　 | 　└ [Phone 脱敏通用版](./_posts/2026-07-28-phone-ai-chat-app.md) | 📥 [下载 phone.html](./assets/phone.html) · 去掉角色设定，开箱即用 |
 | 4.5 | [HBuilder 本地调试实录 — 不消耗云打包额度](./_posts/2026-07-27-hbuilder-local-debug.md) | Android SDK + AVD 命令行搭建，零额度反复调试 APK |
 
@@ -110,8 +110,7 @@ effective-pancake/
 │   ├── 2026-06-10-github-repo-to-blog-guide.md       (3.1) GitHub 仓库变身博客
 │   ├── 2026-06-10-codex-cdp-skill.md                 (4.1) Codex CDP Skill
 │   ├── 2026-06-10-publish-blog-skill.md               (4.3) Publish Blog Skill
-│   ├── 2026-07-23-ai-chat-app-dev-record.md       (4.4) AI 聊天应用开发记录
-│   ├── 2026-07-23-AI聊天应用开发全记录.md               (4.4) 同上（中文完整版）
+│   ├── 2026-07-23-AI聊天应用开发全记录.md               (4.4) AI 聊天应用开发记录
 │   ├── 2026-07-27-hbuilder-local-debug.md           (4.5) HBuilder 本地调试实录
 │   ├── 2026-06-11-codex-qq-messenger-debug.md          (6.1) Codex 控制 QQ 发消息
 │   ├── 2026-06-10-ai-tea-room.md                     (5.1) AI 茶馆夜话
