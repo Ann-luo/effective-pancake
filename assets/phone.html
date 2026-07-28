@@ -6006,7 +6006,6 @@ function showTimelineDate(dateStr) {
   }
   container.innerHTML = '<div class="timeline-date-header">' + dateStr + ' · ' + _timelineMsgs.length + ' 条消息</div>' +
     _timelineMsgs.map(function(m) { return renderTimelineMsgRow(m); }).join('');
-  container.scrollTop = 0;
 }
 
 function renderTimelineMsgRow(m) {
@@ -6035,21 +6034,22 @@ function startTimelineReplay() {
   document.getElementById('timelineSpeedLabel').textContent = '1x';
   document.getElementById('timelineReplayBar').style.display = 'flex';
   document.getElementById('timelineReplayBtn').textContent = '⏸ 停止';
-  // Clear and immediately show first message — avoid blank flash
-  var container = document.getElementById('timelineMsgs');
-  container.innerHTML = '';
   timelineReplayTick();
 }
 function timelineReplayTick() {
   if (_timelineReplayIdx >= _timelineMsgs.length) { stopTimelineReplay(); showToast('回放结束 📅'); return; }
   try {
-    var m = _timelineMsgs[_timelineReplayIdx];
     var container = document.getElementById('timelineMsgs');
-    var div = document.createElement('div');
-    div.innerHTML = renderTimelineMsgRow(m);
-    if (div.firstElementChild) container.appendChild(div.firstElementChild);
-    container.scrollTop = container.scrollHeight;
-  } catch(e) { /* skip bad messages */ }
+    var rows = container.querySelectorAll('.msg-row');
+    // Highlight current message, un-highlight previous
+    if (_timelineReplayIdx > 0 && rows[_timelineReplayIdx - 1]) {
+      rows[_timelineReplayIdx - 1].style.background = '';
+    }
+    if (rows[_timelineReplayIdx]) {
+      rows[_timelineReplayIdx].style.background = 'rgba(7,193,96,.08)';
+      rows[_timelineReplayIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  } catch(e) { /* skip */ }
   _timelineReplayIdx++;
   _timelineReplayTimer = setTimeout(timelineReplayTick, Math.max(200, Math.floor(1200 / _timelineReplaySpeed)));
 }
