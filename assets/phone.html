@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
@@ -5989,6 +5989,7 @@ function showTimelineToday() {
 }
 
 function showTimelineDate(dateStr) {
+  if (_timelineDate === dateStr) return;
   _timelineDate = dateStr;
   stopTimelineReplay();
   var parts = dateStr.split('-');
