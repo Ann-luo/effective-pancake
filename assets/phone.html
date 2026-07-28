@@ -3862,7 +3862,7 @@ function switchPage(name) {
     renderMoments();
   }
   if (name === 'diary') renderDiaryPage();
-  if (name === 'timeline') { renderTimelineCalendar(); showTimelineToday(); }
+  if (name === 'timeline') { setTimeout(function() { renderTimelineCalendar(); showTimelineToday(); }, 50); }
   if (name === 'profile') renderProfilePage();
   if (name === 'chat') renderPageChat();
   if (name === 'todo') renderTodoPage();
