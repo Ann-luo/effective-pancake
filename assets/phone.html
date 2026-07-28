@@ -6002,9 +6002,8 @@ function showTimelineDate(dateStr) {
     container.innerHTML = '<div class="diary-empty"><div class="big-icon">📭</div><div class="empty-title">这天没有聊天记录</div></div>';
     return;
   }
-  var html = '<div class="timeline-date-header">' + dateStr + ' · ' + _timelineMsgs.length + ' 条消息</div>' +
+  container.innerHTML = '<div class="timeline-date-header">' + dateStr + ' · ' + _timelineMsgs.length + ' 条消息</div>' +
     _timelineMsgs.map(function(m) { return renderTimelineMsgRow(m); }).join('');
-  requestAnimationFrame(function() { container.innerHTML = html; });
 }
 
 function renderTimelineMsgRow(m) {
