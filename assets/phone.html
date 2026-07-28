@@ -3281,7 +3281,7 @@ async function idbMigrateFromLocalStorage() {
 
   if (!agentsList.length && legacyChat) {
     // Create default agent from legacy data
-    agentsList = [{ id: 'default', name: 'AI助手', avatar: '🤖', personaTemplate: '', createdAt: Date.now() }];
+    agentsList = [{ id: 'bres', name: 'AI助手', avatar: '🤖', personaTemplate: '', createdAt: Date.now() }];
   }
 
   // ── 3. Per-agent data → rooms ────────────────────────────────────
@@ -3380,7 +3380,7 @@ const DIARY_CONFIG_KEY = 'bles_diary_config';
 
 // ── Helpers: current agent metadata ──────────────────────────────
 function getCurrentAgent() {
-  return agents.find(a => a.id === activeAgentId) || agents[0] || { id: 'default', name: 'AI助手', avatar: '🤖', personaTemplate: DEFAULT_BRES_PERSONA };
+  return agents.find(a => a.id === activeAgentId) || agents[0] || { id: 'bres', name: 'AI助手', avatar: '🤖', personaTemplate: DEFAULT_BRES_PERSONA };
 }
 
 function getAgentName() {
@@ -9209,7 +9209,7 @@ try {
   } else {
     // First run: create default agent
     agents = [{
-      id: 'default',
+      id: 'bres',
       name: 'AI助手',
       avatar: '🤖',
       personaTemplate: DEFAULT_BRES_PERSONA,
