@@ -3836,7 +3836,6 @@ function switchPage(name) {
   if (targetPage && targetPage.classList.contains('active')) return;
 
   // Pre-render target page content BEFORE activation (avoids flash during slide animation)
-  if (name === 'timeline') { renderTimelineCalendar(); showTimelineToday(); }
   if (name === 'diary') renderDiaryPage();
   if (name === 'moments') { momentsUnread = 0; updateMomentsBadge(); renderMoments(); }
   if (name === 'profile') renderProfilePage();
@@ -3864,8 +3863,9 @@ function switchPage(name) {
   const tabs = document.querySelectorAll('.tab-item');
   if (tabs[tabMap[name]]) tabs[tabMap[name]].classList.add('active');
 
-  // Chat render stays here (needs DOM active first for scroll)
+  // Delay heavy renders until slide animation ends
   if (name === 'chat') renderPageChat();
+  if (name === 'timeline') { setTimeout(function() { renderTimelineCalendar(); showTimelineToday(); }, 300); }
 
   // Close overlays
   hidePlusMenu();
