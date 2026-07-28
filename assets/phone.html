@@ -3857,12 +3857,8 @@ function switchPage(name) {
   // Activate the new page
   document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
   if (targetPage) {
-    if (name === 'timeline') {
-      targetPage.classList.add('active'); // no animation
-    } else {
-      targetPage.classList.add('active', 'slide-in');
-      targetPage.addEventListener('animationend', () => targetPage.classList.remove('slide-in'), { once: true });
-    }
+    targetPage.classList.add('active', 'slide-in');
+    targetPage.addEventListener('animationend', () => targetPage.classList.remove('slide-in'), { once: true });
   }
 
   const tabs = document.querySelectorAll('.tab-item');
