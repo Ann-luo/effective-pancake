@@ -3888,7 +3888,7 @@ function switchPage(name) {
 function renderPageChat() {
   updateAvatars();
   updateCharacterStatus();
-  renderMessages(true);
+  setTimeout(function() { renderMessages(true); }, 50);
   renderQuickReplies();
 }
 
