@@ -2364,6 +2364,18 @@
 
       <!-- Messages -->
       <div id="messages"></div>
+      <div id="scrollBtns" style="display:none;position:fixed;right:8px;bottom:120px;z-index:50;display:flex;flex-direction:column;gap:6px;">
+        <button onclick="document.getElementById('messages').scrollTo({top:0,behavior:'smooth'})" style="width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,.4);color:#fff;font-size:14px;cursor:pointer;">⬆</button>
+        <button onclick="scrollChatToBottom()" style="width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,.4);color:#fff;font-size:14px;cursor:pointer;">⬇</button>
+      </div>
+      <script>
+        var _scrollBtnsTimer = null;
+        document.getElementById('messages').addEventListener('scroll', function() {
+          var s = document.getElementById('scrollBtns');
+          s.style.display = 'flex'; clearTimeout(_scrollBtnsTimer);
+          _scrollBtnsTimer = setTimeout(function() { s.style.display = 'none'; }, 3000);
+        });
+      </script>
 
       <!-- Typing -->
       <div class="typing-dots" id="typing"><span></span><span></span><span></span></div>
@@ -9540,7 +9552,8 @@ try {
   initEmojiPanel();
   updateMoodUI();
   updateCharacterStatus();
-  renderMessages();
+  renderMessages(true);
+  setTimeout(function() { scrollChatToBottom(); }, 100);
   renderQuickReplies();
   startHeartbeat();
   applyChatBg();
@@ -9586,7 +9599,7 @@ try {
 <!-- ===== GAME PANEL ===== -->
 <div class="settings-overlay" id="gamePanel" onclick="hideGamePanel()">
   <div class="settings-sheet" onclick="event.stopPropagation()" style="max-height:80vh;overflow-y:auto;">
-    <h3 style="margin-bottom:12px;">🎮 小游戏</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3 style="margin:0;">🎮 小游戏</h3><span onclick="hideGamePanel()" style="font-size:22px;cursor:pointer;opacity:.5;">✕</span></div>
     <div id="gameList"></div>
     <button onclick="hideGamePanel()" style="width:100%;margin-top:12px;padding:10px;border:none;border-radius:10px;background:#f0f0f0;font-size:14px;cursor:pointer;">关闭</button>
   </div>
