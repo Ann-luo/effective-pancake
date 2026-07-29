@@ -2364,17 +2364,21 @@
 
       <!-- Messages -->
       <div id="messages"></div>
-      <div id="scrollBtns" style="display:none;position:fixed;right:8px;bottom:120px;z-index:50;display:flex;flex-direction:column;gap:6px;">
-        <button onclick="document.getElementById('messages').scrollTo({top:0,behavior:'smooth'})" style="width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,.4);color:#fff;font-size:14px;cursor:pointer;">⬆</button>
-        <button onclick="scrollChatToBottom()" style="width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,.4);color:#fff;font-size:14px;cursor:pointer;">⬇</button>
+      <div id="scrollBtns" style="display:none;position:fixed;right:8px;bottom:160px;z-index:50;flex-direction:column;gap:6px;">
+        <button onclick="document.getElementById('messages').scrollTo({top:0,behavior:'smooth'})" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:12px;cursor:pointer;">⬆</button>
+        <button onclick="scrollChatToBottom()" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:12px;cursor:pointer;">⬇</button>
       </div>
       <script>
         var _scrollBtnsTimer = null;
-        document.getElementById('messages').addEventListener('scroll', function() {
+        var _showScrollBtns = function() {
           var s = document.getElementById('scrollBtns');
           s.style.display = 'flex'; clearTimeout(_scrollBtnsTimer);
-          _scrollBtnsTimer = setTimeout(function() { s.style.display = 'none'; }, 3000);
-        });
+          _scrollBtnsTimer = setTimeout(function() { s.style.display = 'none'; }, 2500);
+        };
+        document.getElementById('messages').addEventListener('scroll', _showScrollBtns);
+        document.getElementById('messages').addEventListener('mouseenter', _showScrollBtns);
+        document.getElementById('scrollBtns').addEventListener('mouseenter', function() { clearTimeout(_scrollBtnsTimer); });
+        document.getElementById('scrollBtns').addEventListener('mouseleave', function() { this.style.display = 'none'; });
       </script>
 
       <!-- Typing -->
@@ -9552,9 +9556,10 @@ try {
   initEmojiPanel();
   updateMoodUI();
   updateCharacterStatus();
-  renderMessages(true);
-  setTimeout(function() { scrollChatToBottom(); }, 100);
+  renderMessages();
   renderQuickReplies();
+  setTimeout(function() { scrollChatToBottom(); }, 500);
+  setTimeout(function() { scrollChatToBottom(); }, 1000);
   startHeartbeat();
   applyChatBg();
   renderMoodCalendar();
