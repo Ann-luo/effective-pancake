@@ -2713,6 +2713,10 @@
       <span class="pm-icon">⏰</span>
       <span>定时消息</span>
     </div>
+    <div class="pm-item" onclick="hidePlusMenu();showGamePanel();">
+      <span class="pm-icon">🎮</span>
+      <span>小游戏</span>
+    </div>
     <div class="pm-item" onclick="summarizeChat()">
       <span class="pm-icon">🤖</span>
       <span>AI 摘要</span>
@@ -4774,14 +4778,87 @@ var QUICK_COMMANDS = {
   '/晚安': '跟我说晚安，温暖一点。',
   '/早安': '跟我说早安，元气一点。',
 };
+var GAMES = [
+  {cat:'对抗',list:[
+    {id:'guess',name:'🎯 猜数字',cmd:'/guess',desc:'AI想一个数，你来猜'},
+    {id:'rps',name:'✊ 石头剪刀布',cmd:'/rps',desc:'出石头/剪刀/布'},
+    {id:'tictactoe',name:'#️⃣ 井字棋',cmd:'/ttt',desc:'坐标落子，三连胜'},
+  ]},
+  {cat:'合作',list:[
+    {id:'story',name:'📖 一起编故事',cmd:'/story',desc:'轮流续写，AI记情节'},
+    {id:'escape',name:'🏚️ 密室逃脱',cmd:'/escape',desc:'AI描述房间，你解谜'},
+  ]},
+  {cat:'表演',list:[
+    {id:'joke',name:'❄️ 冷笑话大赛',cmd:'/coldjoke',desc:'AI讲笑话，你打分'},
+    {id:'rp',name:'🎭 角色扮演',cmd:'/rp',desc:'AI扮演角色即兴演出'},
+    {id:'rap',name:'🎤 说唱Battle',cmd:'/rap',desc:'AI押韵回击'},
+  ]},
+  {cat:'知识',list:[
+    {id:'idiom',name:'🎤 成语接龙',cmd:'/idiom',desc:'尾字接龙，接不上输'},
+    {id:'poem',name:'📜 诗词接龙',cmd:'/poem',desc:'尾字/尾词续诗'},
+    {id:'feihua',name:'🌸 飞花令',cmd:'/feihua',desc:'含某字的诗句'},
+    {id:'riddle',name:'🧩 猜谜语',cmd:'/riddle',desc:'AI出谜面，你来猜'},
+    {id:'quiz',name:'❓ 冷知识问答',cmd:'/quiz',desc:'AI出题，你回答'},
+  ]},
+  {cat:'策略',list:[
+    {id:'blackjack',name:'🃏 21点',cmd:'/bj',desc:'接近21点，不能爆'},
+    {id:'gamble',name:'💰 猜拳赌博',cmd:'/gamble',desc:'虚拟筹码，押注猜拳'},
+  ]},
+];
+var _activeGame = null;
+function showGamePanel() {
+  var html = '';
+  for (var c = 0; c < GAMES.length; c++) {
+    html += '<div style="font-weight:600;font-size:14px;margin:8px 0 4px;color:var(--wechat-green);">' + GAMES[c].cat + '</div>';
+    for (var g = 0; g < GAMES[c].list.length; g++) {
+      var gm = GAMES[c].list[g];
+      html += '<div onclick="startGame(\''+gm.id+'\',\''+gm.name+'\',\''+gm.cmd+'\');hideGamePanel();" style="padding:10px;margin:4px 0;border-radius:10px;background:var(--input-bg);cursor:pointer;display:flex;align-items:center;gap:8px;"><span style="font-size:20px;">'+gm.name.slice(0,2)+'</span><div><div style="font-size:14px;font-weight:500;">'+gm.name+'</div><div style="font-size:11px;color:#999;">'+gm.desc+'</div></div></div>';
+    }
+  }
+  document.getElementById('gameList').innerHTML = html;
+  document.getElementById('gamePanel').classList.add('show');
+}
+function hideGamePanel() { document.getElementById('gamePanel').classList.remove('show'); }
+function startGame(id, name, cmd) {
+  _activeGame = {id:id, name:name};
+  document.getElementById('gameActiveBar').style.display = 'block';
+  document.getElementById('gameActiveName').textContent = name;
+  document.getElementById('msgInput').value = cmd;
+  document.getElementById('sendBtn').classList.add('active');
+  sendMsg(cmd);
+}
+function endGame() {
+  _activeGame = null;
+  document.getElementById('gameActiveBar').style.display = 'none';
+  showToast('游戏结束 👋');
+}
+var GAME_PROMPTS = {
+  guess:   '我们来玩猜数字！你在心里想一个1-100的数字，我来猜。每轮你只回复"大了"或"小了"或"对了"。我先猜：50？',
+  rps:     '我们来玩石头剪刀布！你出石头、剪刀或布，我也会出。轮流来。你说"结束"就停止。准备好了吗？我出了…石头！',
+  ttt:     '我们来玩井字棋！棋盘坐标：A1 A2 A3 / B1 B2 B3 / C1 C2 C3。你执X先手。你下哪里？',
+  story:   '我们来一起编故事！你开头，我续写。一人一段。故事风格随你定。你说第一段吧~',
+  escape:  '密室逃脱！你被困在一个房间里。我描述场景，你说行动指令（如"看桌子""打开抽屉"）。你的目标是找到钥匙逃出去。准备好了吗？你发现自己在一个昏暗的房间里，只有一扇锁着的门、一张旧桌子、一个书架。你要怎么做？',
+  coldjoke:'冷笑话大赛！你讲一个，我讲一个。每轮结束时打分"冷🥶""还行😐""好笑😂"。你先来还是我先来？',
+  rp:      '角色扮演！你想让我扮演什么角色？医生、老师、侦探、古代人……选一个，我马上入戏。',
+  rap:     '说唱Battle！一人一段，要押韵。你先来？主题随你定。',
+  idiom:   '成语接龙！我说一个成语，你用它的最后一个字开头接下一个。接不上或重复了就输。如果尾字很难接，可以用谐音字。我先来：一心一意。',
+  poem:    '诗词接龙！我说一句诗（古诗词），你用那句的最后一个字开头接下一句（可以是同一首诗里的，也可以不同）。我先来：床前明月光。',
+  feihua:  '飞花令！你说一个字（如"花""月""春"），我接一句含这个字的诗词。我接完你再换个字或继续。你先说字~',
+  riddle:  '猜谜语！我出一个谜语，你来猜。猜对了就换你出题，猜不出来可以说"答案"我告诉你。准备好了吗？第一题：上边毛，下边毛，中间一颗黑葡萄。（打一器官）',
+  quiz:    '冷知识问答！我问你一个冷知识问题，你回答。答完我告诉对不对并解释。准备好了吗？第一题：人体最大的器官是什么？',
+  blackjack:'21点！我给你发两张牌，你可以"要牌"或"停牌"。J/Q/K算10点，A算1或11。超过21就爆了。准备好了吗？你的两张牌是……（随机生成两张1-10的牌，报出点数，问"要牌还是停牌？"）',
+  gamble:  '猜拳赌博！初始筹码100。每轮你下注（10/20/50），然后出石头/剪刀/布。赢了翻倍，输了扣注。说"余额"看筹码，"结束"退出。准备好了吗？你下注多少？',
+};
 function sendMsg(text) {
   const input = document.getElementById('msgInput');
   var msgText = text || input.value.trim();
   if (!msgText || isSending) return;
 
-  // Quick command: /xxx
-  if (msgText[0] === '/' && QUICK_COMMANDS[msgText]) {
-    msgText = QUICK_COMMANDS[msgText];
+  // Quick command: /xxx or game commands
+  if (msgText[0] === '/') {
+    if (QUICK_COMMANDS[msgText]) { msgText = QUICK_COMMANDS[msgText]; }
+    else if (GAME_PROMPTS[msgText.substring(1)]) { msgText = GAME_PROMPTS[msgText.substring(1)]; }
+    else if (msgText === '/endgame' && _activeGame) { endGame(); return; }
   }
 
   input.value = '';
@@ -9506,6 +9583,18 @@ try {
 })();
 </script>
 
+<!-- ===== GAME PANEL ===== -->
+<div class="settings-overlay" id="gamePanel" onclick="hideGamePanel()">
+  <div class="settings-sheet" onclick="event.stopPropagation()" style="max-height:80vh;overflow-y:auto;">
+    <h3 style="margin-bottom:12px;">🎮 小游戏</h3>
+    <div id="gameList"></div>
+    <button onclick="hideGamePanel()" style="width:100%;margin-top:12px;padding:10px;border:none;border-radius:10px;background:#f0f0f0;font-size:14px;cursor:pointer;">关闭</button>
+  </div>
+</div>
+<div id="gameActiveBar" style="display:none;position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:100;background:#07c160;color:#fff;padding:6px 16px;border-radius:20px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.2);white-space:nowrap;">
+  <span id="gameActiveName"></span>
+  <button onclick="endGame()" style="margin-left:8px;background:rgba(255,255,255,.3);border:none;color:#fff;border-radius:10px;padding:2px 10px;font-size:11px;cursor:pointer;">结束</button>
+</div>
 <!-- ===== IMAGE CROP OVERLAY ===== -->
 <div class="crop-overlay" id="cropOverlay">
   <div class="crop-container" id="cropContainer">
