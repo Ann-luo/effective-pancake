@@ -2366,7 +2366,7 @@
       <div id="messages"></div>
       <div id="scrollBtns" style="display:none;position:fixed;right:8px;bottom:160px;z-index:50;flex-direction:column;gap:6px;">
         <button onclick="document.getElementById('messages').scrollTo({top:0,behavior:'smooth'})" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:12px;cursor:pointer;">⬆</button>
-        <button onclick="scrollChatToBottom()" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:12px;cursor:pointer;">⬇</button>
+        <button onclick="var m=document.getElementById('messages');m.scrollTop=m.scrollHeight;" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:12px;cursor:pointer;">⬇</button>
       </div>
       <script>
         var _scrollBtnsTimer = null;
@@ -9558,8 +9558,6 @@ try {
   updateCharacterStatus();
   renderMessages();
   renderQuickReplies();
-  setTimeout(function() { scrollChatToBottom(); }, 500);
-  setTimeout(function() { scrollChatToBottom(); }, 1000);
   startHeartbeat();
   applyChatBg();
   renderMoodCalendar();
