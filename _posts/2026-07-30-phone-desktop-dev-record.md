@@ -1,3 +1,11 @@
+---
+layout: post
+title: "给 HTML 加个手机桌面：一个 AI 聊天应用的\"操作系统化\"尝试"
+date: 2026-07-30 12:00:00 +0800
+categories: [Claude Code, AI工具]
+tags: [HTML, JavaScript, 桌面模拟, 单文件, 开源]
+---
+
 # 给 HTML 加个手机桌面：一个 AI 聊天应用的"操作系统化"尝试
 
 > 2026-07-30 · 纯前端 · 单文件 · 手机桌面模拟器
