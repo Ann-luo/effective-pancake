@@ -277,13 +277,14 @@
       z-index: 5;
     }
     .msg-row .delete-overlay.show { display: flex; }
+    .msg-row .delete-overlay { gap: 6px; }
     .msg-row .delete-overlay button {
       background: var(--danger);
       color: #fff;
       border: none;
       border-radius: 20px;
-      padding: 8px 20px;
-      font-size: 13px;
+      padding: 7px 14px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
     }
@@ -9030,8 +9031,14 @@ function getYearStats() {
 var topicTags = []; // [{tag, count}]
 function showYearReport() {
   var s = getYearStats();
-  var msg = '📊 ' + getRoomName() + ' · 年度报告\n\n💬 总消息：' + s.totalMsgs + ' 条\n   我 ' + s.userMsgs + ' · AI ' + s.aiMsgs + '\n📅 从 ' + s.firstDate + ' 开始\n🕐 最晚聊到：' + s.lastTime + '\n🎁 送出礼物：' + s.sentGifts + ' 次（暴击 ' + s.bonuses + '）\n🧧 收红包 ' + s.redIn + ' · 发红包 ' + s.redOut + '\n\n（以上为当前房间「' + getRoomName() + '」的数据）';
-  alert(msg);
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;z-index:99999;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;';
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:360px;width:90%;text-align:center;';
+  box.innerHTML = '<b style="font-size:18px;">📊 ' + getRoomName() + ' · 年度报告</b><div style="margin:16px 0;line-height:2;font-size:14px;text-align:left;">💬 总消息：<b>' + s.totalMsgs + '</b> 条（我 ' + s.userMsgs + ' · AI ' + s.aiMsgs + '）<br>📅 从 <b>' + s.firstDate + '</b> 开始<br>🕐 最晚聊到：<b>' + s.lastTime + '</b><br>🎁 送出礼物：<b>' + s.sentGifts + '</b> 次（暴击 ' + s.bonuses + '）<br>🧧 收红包 <b>' + s.redIn + '</b> · 发红包 <b>' + s.redOut + '</b></div><div style="font-size:12px;color:#999;margin-bottom:12px;">以上为「' + getRoomName() + '」房间数据</div><button onclick="this.closest(\'div[style]\').parentElement.remove()" style="width:100%;padding:10px;border-radius:10px;border:none;background:#07c160;color:#fff;font-size:14px;cursor:pointer;">关闭</button>';
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
 }
 function renderTopicTags() {
   var container = document.getElementById('topicTagsCloud');
@@ -9053,7 +9060,7 @@ function maybeExtractTopicTags() {
   if (_lastTagExtract && (Date.now() - _lastTagExtract) < 600000) return; // 10min throttle
   _lastTagExtract = Date.now();
   var recent = messages.slice(-30).map(function(m){return m.text||'';}).join(' ');
-  callDeepSeek('分析以下对话，提取2-5个话题标签（每个2-4字中文），只返回JSON数组如["学习","美食"]：\n\n'+recent).then(function(reply){
+  callDeepSeek('分析以下对话，提取2-5个话题标签。要求：必须用简体中文（2-4个字），只提取有意义的话题如学习、美食、工作、旅行。不要英文、不要单字、不要数字。只返回JSON数组如["学习","美食"]：\n\n'+recent).then(function(reply){
     if (!reply) return;
     try{var tags=JSON.parse(reply);if(Array.isArray(tags)){tags.forEach(function(t){var e=topicTags.find(function(x){return x.tag===t;});if(e)e.count++;else topicTags.push({tag:t,count:1});});saveData();renderTopicTags();}}catch(e){}
   }).catch(function(){});
