@@ -278,7 +278,7 @@ _pls.addEventListener('click', function(e) {
 
 ## 壁纸升级：Canvas 压缩 + 变量统一
 
-第一版壁纸上传直接把原始文件的 base64 塞进 `localStorage`。一个 2MB 的 JPEG → base64 约 2.7MB，两张壁纸就能超 5MB 限额，静默写入失败。用户换了壁纸，刷新一下又变回默认——体验极差。
+第一版壁纸上传直接把原始文件的 base64 塞进 `localStorage`。一个 2MB 的 JPEG → base64 约 2.7MB，两张壁纸就能超 5MB 限额，静默写入失败。用户换了壁纸，刷新一下又变回来——体验极差。
 
 修了两处：
 
@@ -361,8 +361,9 @@ async function paddFile() {
 还加了文件查看器——点击文件名弹出全屏预览：
 - **图片**（png/jpg/gif/webp/svg）→ `<img>` 全屏展示
 - **PDF** → `<iframe>` 内嵌
-- **文本**（txt/json/xml/html/css/js/md/log/csv）→ `atob()` 解码 base64 后 `<pre>` 展示（最多 50 万字符）
-- **其他格式** → 显示文件名 + 大小 +"📥 下载查看"按钮
+- **音频/视频** → `<audio>`/`<video>` 播放
+- **文本**（txt/json/xml/html/css/js/md/log）→ `atob()` 解码 base64 后 `<pre>` 展示
+- **其他格式** → 显示"此文件格式不支持预览"
 
 ---
 
@@ -413,15 +414,246 @@ var mYT  = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/i);
 
 ---
 
+## 锁屏与微信锁的协同
+
+### 锁屏状态变量 Bug
+
+在某次自检中发现，桌面锁屏的状态变量混乱——`_plocked` 在 3 处引用但从未用 `var` 声明，`_plsLocked` 声明了但从未赋值。更严重的是，`visibilitychange` 事件处理器调用了不存在的 `plsLockShow()` 函数，而这个处理器还写在了 Phone App 的闭包内部，访问不到全局变量。
+
+修法：把锁屏状态管理集中在全局桌面代码区，定义 `var _plsLocked = true`（初始为锁定状态），实现 `plsLockShow()`（显示桌面锁屏）和 `plsUnlock()`（解锁），统一替换所有 `_plocked` 引用为 `_plsLocked`。`visibilitychange` 监听器也从 Phone 闭包移到全局。
+
+### 锁屏后回到原界面
+
+之前解锁后总是跳转到桌面——不管用户之前在哪个 App。原因是 `plsUnlock()` 只是简单显示桌面，没有记录锁屏前打开的是什么。
+
+修法：加一个 `_pBeforeLock` 变量。`plsLockShow()` 锁屏时保存 `_pcurApp`，`plsUnlock()` 解锁时恢复。如果是切 Tab 触发的锁屏（`visibilitychange`），保存状态并恢复；如果是用户主动按 Home 离开微信，清掉状态回到桌面。
+
+```javascript
+function plsLockShow(saveState) {
+  if (_plsLocked) return;
+  _plsLocked = true;
+  if (saveState !== false) _pBeforeLock = _pcurApp;  // 切 Tab 保存，主动离开不保存
+  // 显示锁屏...
+}
+function plsUnlock() {
+  _plsLocked = false;
+  // 恢复 _pBeforeLock 对应的 App，无则显示桌面
+  if (_pBeforeLock === 'phone') { /* 回到微信 */ }
+  else if (_pBeforeLock) { /* 回到对应 App */ }
+  else { /* 回到桌面 */ }
+}
+```
+
+### 桌面锁屏与微信锁屏双层机制
+
+用户的两个需求：（1）只要离开微信就锁屏（2）切换浏览器 Tab 也锁屏。而且"如果一起触发就一起锁，桌面端优先"。
+
+最直接的实现：
+- **在微信中切 Tab**：`visibilitychange` → 桌面锁屏（`z-index: 999999`）弹出覆盖一切，同时调用微信的 `lockNow()` 触发微信密码锁。用户解锁桌面后，微信锁屏还在底下等着。
+- **在微信中按 Home/返回**：`pcloseApp()` / `_pgoHome()` 中检测 `_pcurApp === 'phone'` → 调用微信 `lockNow()` 但不触发桌面锁屏——用户自己想回桌面，不需要桌面锁从中拦截。
+- **进入微信时检查锁状态**：`popenApp('phone')` 恢复了对 `lockConfig.enabled && !lockActive` 的检查。如果微信密码锁已启用且未解锁 → 先弹密码锁，通过后才进微信。
+
+### 导航栏：加回来但要分场景
+
+用户说"去掉导航栏吧太碍事了"之后，我在某次重构时把整个 `pnavbar` HTML div 和 CSS 全部清理了。结果 JS 里还有 `document.getElementById('pnavbar').classList.add('show')` 的引用——找 ID 返回 null，静默失败。
+
+修复 pnavbar 回归后，按场景分区：
+- **桌面 App（相册/文件/设置等）**：显示导航栏（返回/桌面/通知），底部适配 `safe-area-inset-bottom`
+- **Phone/微信**：`popenApp('phone')` 里主动隐藏导航栏——微信有自己的界面，不需要桌面导航
+
+---
+
+## CSS 清理：重复规则与黑色背景
+
+### 重复的 .pent-ls 规则块
+
+不知道哪次合并代码时，`.pent-ls` 完整定义出现了两次——含 `!important` 版本和不含的版本，连子规则 `.pls-time`、`.pls-date`、`.pls-hint` 和 `@keyframes plsPulse` 都重复了一遍。虽然没造成视觉 bug（两个版本属性完全一致），但让 CSS 凭空多了 15 行垃圾。
+
+### 桌面默认黑屏
+
+`.pent-dt` 的 CSS 默认背景是 `background-color: #000`（纯黑）。当用户没设壁纸时，桌面显示黑色而非蓝色渐变——和锁屏的深蓝完全不搭。
+
+修复：CSS 默认值从 `background-color: #000` 改为 `background: linear-gradient(180deg, #1a1a2e, #16213e, #0f3460)`——和锁屏一模一样的渐变。设了壁纸后 inline style 会覆盖 CSS，一切正常。
+
+---
+
+## PowerShell 正则的"误伤"事件
+
+用 PowerShell 给文件加 pnavbar 时，写了个 `(?=</body>)` 正则往前插 HTML。结果这个正则在聊天记录导出功能的 JS 代码里也匹配到了——那段代码拼了个 `fullHtml = '<!DOCTYPE html>...' + innerHTML + '</body></html>'` 字符串。
+
+pnavbar 的 `<div>` 被直接塞进了那个单引号字符串内部，活生生把 JS 语法炸了。`new Function()` 检测到 "Invalid or unexpected token"，整个页面的 JS 不执行——黑屏。
+
+教训：**在混合 HTML 和 JS 的大文件里用正则做全局替换极其危险。** 字符串里随时可能出现和 HTML 一模一样的片段。应该用更精确的定位方式，或者至少替换完后做一次完整的语法检查。
+
+---
+
+## 闹钟：从小通知到全屏弹窗
+
+闹钟到时间后最初只是调 `pnotify()` 发一条顶部横幅通知——3 秒消失，很容易错过。用户说"闹钟设置到达时间后弹窗通知弹出来"。
+
+改成了**全屏模态弹窗**：
+
+```
+  ⏰
+  闹钟
+  08:30
+  时间到！
+  [🔕 关闭]
+```
+
+- `z-index: 9999999`——比桌面锁屏（999999）还高一层，**在任何界面都会弹出**
+- 附带 base64 WAV 提示音（`new Audio().play()`）
+- 最多同时设置 10 个闹钟
+- 淡入缩放动画
+
+纯前端限制：闹钟只在页面打开时有效（`setTimeout`），页面关闭闹钟失效。
+
+---
+
+## 天气：每日随机生成
+
+天气最初是死数据——永远是"☀️ 晴 28°"和固定的三天预报。用户说要"每天随机生成，可以显示有不一样感一点"。
+
+用当日日期做伪随机种子：
+
+```javascript
+function prWeather() {
+  var seed = parseInt(new Date().toISOString().split('T')[0].replace(/-/g, '')) % 100;
+  var conditions = [
+    {e: '☀️', t: '晴'}, {e: '⛅', t: '多云'}, {e: '🌧️', t: '小雨'},
+    {e: '⛈️', t: '雷阵雨'}, {e: '🌤️', t: '晴间多云'}, {e: '☁️', t: '阴'},
+    {e: '🌦️', t: '阵雨'}, {e: '🌫️', t: '雾'}
+  ];
+  var today = conditions[seed % conditions.length];
+  // 温度在基准值上下浮动 ±2°
+  // 明天/后天/大后天依次取后续天气
+}
+```
+
+每天换一个天气，温度有小幅波动，三天预报各不相同。页面底部标注"📍 基于当日随机生成"——诚实比装逼重要。
+
+---
+
+## 短信：从 prompt() 到内联输入框
+
+最初的短信输入用的是 `prompt('短信内容:')`——浏览器原生弹窗，在手机端体验很差：键盘可能遮挡、不能换行、和页面风格割裂。
+
+改成和备忘录一样的**内联输入框 + 发送按钮**：
+
+```html
+<input id="psmsInp" placeholder="输入短信内容…">
+<button onclick="paddSMS()">发送</button>
+```
+
+删除了 `paddSMS()` 里的 `prompt()`，改为读 `document.getElementById('psmsInp').value`。每条短信带时间戳和删除按钮。
+
+---
+
+## 应用管理：拖拽排序保留，删除移到商店
+
+### 长按删除和拖拽排序的冲突
+
+最初桌面上同时挂了长按删除（`oncontextmenu`）和拖拽排序（`touchstart` 500ms + `touchmove`），两个手势都依赖"按住不动"这个动作，在移动端互相干扰——长按弹删除确认时拖拽也激活了，两个都不生效。
+
+### 取舍：保留拖拽，删除移入商店
+
+拖拽排序没有其他替代方案（图标位置必须通过拖拽来改），而删除有商店这条退路。
+
+- 桌面图标去掉 `oncontextmenu` 属性，只有 `onclick` 打开 + `touch` 拖拽排序
+- 商店里每个已安装应用显示**🗑️ 卸载**按钮，点确认后从桌面移除
+- 已卸载应用显示**📥 下载**按钮，点后恢复
+- Phone / 商店 / 设置标记为**🔒 系统**，不可卸载
+
+```javascript
+function prStore() {
+  var prot = ['phone', 'paStore', 'paSettings'];
+  PAPPS.forEach(function(a) {
+    if (已卸载) → '📥 下载'
+    else if (系统应用) → '🔒 系统'
+    else → '🗑️ 卸载'
+  });
+}
+```
+
+卸载和安装都走 `pent_removed` localStorage 列表，操作后自动重建桌面图标布局。
+
+---
+
+## 壁纸存储：双保险
+
+壁纸压缩后通常只有 150-200KB，localStorage 完全够用。但压缩过程可能失败（图片损坏、格式不支持、Canvas 被污染），失败时的 raw base64 可能远超 5MB 限额直接写爆。
+
+加了三层保障：
+
+```javascript
+// 层级 1：FileReader 错误
+r.onerror = function() { pnotify({title: '读取失败', text: '文件无法读取，请重试'}) };
+
+// 层级 2：Image 加载错误
+img.onerror = function() { pnotify({title: '图片无效', text: '不支持此图片格式'}) };
+
+// 层级 3：localStorage 写满 → 降级到 IndexedDB
+try {
+  localStorage.setItem('pent_wp', d);
+} catch(ex) {
+  idbPut('pent_wp', {d: d, t: Date.now()}).then(function() {
+    pnotify({title: '🖼️ 壁纸已更新', text: '已存入IndexedDB'});
+  });
+}
+```
+
+页面加载恢复壁纸时也先查 localStorage，查不到再查 IndexedDB。两个存储互为备份。
+
+---
+
+## 通知：清全部 + 单独删
+
+通知系统最初只有"下滑查看"和"3 秒自动消失"，无法主动清理。用户问"通知界面能不能清除通知？"
+
+加了三个操作：
+
+- **通知中心顶部"清除全部"按钮** → `pclearNotifs()` 直接清空 `_pnotifs` 数组
+- **每条通知右侧 ✕** → `pdelNotif(i)` 删单条 → 但这里有个坑：点击 ✕ 事件冒泡到通知中心遮罩的 `onclick="if(event.target===this)phideNC()"`，导致通知面板在删除后立刻关闭。修法是 ✕ 的 onclick 加上 `event.stopPropagation()`
+- **通知 App（paNotify）底部"清除全部通知"按钮** → 和通知中心同一个 `pclearNotifs()`
+
+---
+
+## 文件导出（未完成）
+
+文件预览器里加过下载按钮，试图做微信同款的文件导出：调用 `navigator.share()` 弹系统分享面板，分享失败降级到 `<a download>`。但 APK 的 WebView 中 `navigator.share` 不可用，`<a>` 的 `click()` 虽然 append 了 DOM 但在部分 WebView 里仍然不触发下载——因为没有原生 DownloadListener 接管。
+
+反复试了 `window.open(blobUrl)`、`fetch` 转 blob 再分享、底部弹面板等好几个方案，始终无法在 APK 里稳定导出文件。最终决定暂时砍掉下载功能——文件管理器回归纯预览：在线看图、播音频视频、读文本，不导出。Web 环境写文件系统的硬限制摆在那里，与其给用户半成品，不如不做。
+
+---
+
+## 相册和文件管理的"失而复得"
+
+在多次备份恢复和代码合并的过程中，相册和文件管理 App 的功能被反复覆盖丢失——有时只剩静态网格、有时只剩占位文字。对照早期备份 `p-ent-phone (2).html` 逐个恢复：
+
+| 功能 | 丢失时状态 | 恢复后 |
+|------|-----------|--------|
+| 相册上传 | 无按钮 | 📷 上传照片（≤10MB 自动压缩）|
+| 相册查看 | 无点击 | 全屏查看 + 右上角 ✕ 关闭 |
+| 相册删除 | 无 | 每张照片右上角 ✕ 删除 |
+| 文件上传 | 无 | ➕ 添加文件 |
+| 文件删除 | 无 | 每行 ✕ 删除 |
+| 文件预览 | 无 | 图片/音频/视频/PDF/文本在线预览 |
+| 日历翻月 | 无 ◀▶ | ◀ 年+月 ▶ 切月 |
+| 时钟秒表 | 无 | 时钟/秒表(rAF)/倒计时/闹钟 四 Tab |
+
+核心教训：**在备份和正式文件之间频繁切换时，永远从已知完好的备份出发，加完一个功能立刻验证，确认无误再继续。** 一次改太多、改完不验，出了 bug 完全不知道哪个改动引起的。
+
+---
+
 ## 总结
 
-桌面系统主体 ~500 行 CSS + ~600 行 JS = ~1100 行。大部分时间没花在写代码上——花在调 CSS 图层冲突、变量名不一致、壁纸上传的七次尝试、时钟标签的事件绑定方式切换。
+桌面系统主体 ~500 行 CSS + ~850 行 JS = ~1350 行。大部分时间没花在写代码上——花在调 CSS 图层冲突、变量名不一致、壁纸上传的七次尝试、时钟标签的事件绑定方式切换、锁屏状态变量的修复、PowerShell 正则误伤排查。
 
-最大的教训：**在 9600 行的现有文件上加功能，改一个 CSS 属性能影响三处、改一个变量名能静默失败四个地方。** 备份文件救了很多次命——每次大改动前先 `cp` 一份，不行就回退。
+最大的教训：**在 9700 行的现有文件上加功能，改一个 CSS 属性能影响三处、改一个变量名能静默失败四个地方。** 备份文件救了很多次命——每次大改动前先 `cp` 一份，不行就回退。
 
-现在这个 9775 行的 HTML 文件，打开是一个手机桌面——锁屏、图标、17 个 App（拍照、相册、文件、音乐、备忘录、日历、时钟、计算器、天气、电话、短信、地图、商店、设置、通知、Phone、小游戏）、通知、壁纸。点 Phone 图标进入完整 AI 聊天应用。双击就用，零依赖。
+现在这个 ~9790 行的 HTML 文件，打开是一个手机桌面——锁屏、图标、17 个 App（拍照、相册、文件、音乐、备忘录、日历、时钟、计算器、天气、电话、短信、地图、商店、设置、通知、Phone、小游戏）、通知、壁纸。点 Phone 图标进入完整 AI 聊天应用。双击就用，零依赖。
 
-整个开发过程最深的感受：**在已有的复杂代码上做增量，最大的成本不是写新代码，而是弄清楚旧代码的每一行在干什么。** 备份-修改-验证-回退的循环跑了不下十次，每次回退都学到一点东西——CSS 简写和分离属性的优先级、`!important` 对 inline style 的覆盖、文本节点的 `.closest()` 陷阱、IndexedDB 存大文件比 localStorage 靠谱得多。
+整个开发过程最深的感受：**在已有的复杂代码上做增量，最大的成本不是写新代码，而是弄清楚旧代码的每一行在干什么。** 备份-修改-验证-回退的循环跑了不下十次，每次回退都学到一点东西——CSS 简写和分离属性的优先级、`!important` 对 inline style 的覆盖、文本节点的 `.closest()` 陷阱、IndexedDB 存大文件比 localStorage 靠谱得多、PowerShell 正则不要往混合 HTML/JS 的大文件里瞎怼。
 
 ---
 
