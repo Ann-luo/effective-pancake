@@ -1,11 +1,3 @@
----
-layout: post
-title: "给 HTML 加个手机桌面：一个 AI 聊天应用的\"操作系统化\"尝试"
-date: 2026-07-30 12:00:00 +0800
-categories: [Claude Code, AI工具]
-tags: [HTML, JavaScript, 桌面模拟, 单文件, 开源]
----
-
 # 给 HTML 加个手机桌面：一个 AI 聊天应用的"操作系统化"尝试
 
 > 2026-07-30 · 纯前端 · 单文件 · 手机桌面模拟器
@@ -247,14 +239,190 @@ p-ent-phone 内嵌的 Phone App 走 `phone_db_v1`，桌面系统数据走 `pent_
 
 ---
 
+## 锁屏系统的三次返工
+
+### 第一次：加密码锁屏
+
+用户说"桌面端也要有密码锁屏，像微信那样"。于是我照搬了 Phone App 的锁屏逻辑——PIN 码六位圆点 + 虚拟数字键盘 + 物理键盘双支持，还有问答模式（"我最喜欢的颜色？"）。密码输错 5 次锁定，有"重置锁屏密码"入口。
+
+代码写了一大堆：`plsShowChallenge()` 动态创建 PIN UI、`plsPinKeyHandler()` 监听物理键盘、`plsTapPin()` 处理虚拟键盘触摸、`plsCheckQA()` 验证问答。CSS 也加了几十个类——圆点动画、numpad 布局、错误提示、按钮样式。
+
+结果用户一点锁屏——**没反应**。
+
+### 第二次：修点击事件
+
+排查发现是 `e.target.closest()` 的问题。当用户点"点击解锁"四个字时，浏览器 `e.target` 是**文本节点**（Text Node，`nodeType === 3`），不是 Element。文本节点没有 `.closest()` 方法——`TypeError: e.target.closest is not a function`，整个 click handler 静默死亡。
+
+修法：手动遍历 DOM 树，而不是依赖 `.closest()`：
+
+```javascript
+_pls.addEventListener('click', function(e) {
+  var t = e.target;
+  while (t && t.nodeType === 3) t = t.parentElement;  // 文本节点 → 父元素
+  var el = t;
+  while (el && el !== _pls) {
+    if (el.tagName === 'BUTTON' || el.tagName === 'INPUT') return;
+    el = el.parentElement;
+  }
+  // 到达 _pls 本身 → 处理点击
+});
+```
+
+### 第三次：全部回退
+
+密码锁屏修好后，用户说"算了，桌面端不需要密码，锁屏一次就够了"。于是把所有 PIN/QA 逻辑全删——200+ 行代码、几十个 CSS 类、动态 UI 创建函数——回归到最初的三行点击解锁。同时也删掉了自动锁屏定时器，回归到离开浏览器时锁屏（`visibilitychange` 事件 + `plsLockShow()`）。
+
+**教训**：不是所有功能都需要做复杂。桌面锁屏的价值在于"进入时那一瞬间的仪式感"——上滑解锁的动画、深蓝渐变背景、时间日期——就够了。密码留给 Phone App 内部的锁屏系统处理，不要重复造轮子。
+
+---
+
+## 壁纸升级：Canvas 压缩 + 变量统一
+
+第一版壁纸上传直接把原始文件的 base64 塞进 `localStorage`。一个 2MB 的 JPEG → base64 约 2.7MB，两张壁纸就能超 5MB 限额，静默写入失败。用户换了壁纸，刷新一下又变回默认——体验极差。
+
+修了两处：
+
+**1. Canvas 压缩**
+
+```javascript
+function psetWP(inp) {
+  var f = inp.files[0];
+  if (f.size > 10 * 1024 * 1024) { /* 拒绝 */ }
+  var r = new FileReader();
+  r.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var c = document.createElement('canvas');
+      var s = Math.min(1, 1920 / img.width);  // 最大 1920px 宽
+      c.width = Math.round(img.width * s);
+      c.height = Math.round(img.height * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      var d = c.toDataURL('image/jpeg', 0.7);  // JPEG 70% 质量
+      localStorage.setItem('pent_wp', d);
+      _pdt.style.background = 'url(' + d + ') center/cover';
+    };
+    img.src = e.target.result;
+  };
+  r.readAsDataURL(f);
+  inp.value = '';  // 允许重复选同一文件
+}
+```
+
+1920px JPEG 0.7 质量，典型照片从 2MB 压缩到 ~150KB，base64 约 200KB——远低于 localStorage 5MB 限额。
+
+**2. 变量名统一**
+
+备份版里壁纸函数用 `pdt.style.backgroundImage`（浏览器 ID 全局变量），但桌面元素创建用的是 `var _pdt`。`pdt` 和 `_pdt` 是两个不同的东西——前者依赖浏览器的"命名元素自动全局"特性，后者是正经 JS 变量。全局搜索 `pdt.` 和 `document.getElementById('pls')` 全部改成 `_pdt` 和 `_pls`。
+
+同时用 CSS `background` 简写替代分离的 `backgroundImage` + `backgroundSize` + `backgroundPosition`，确保壁纸始终 `center/cover`。
+
+---
+
+## 导航栏：加上又删掉
+
+为了让用户在各 App 之间方便切换，加了一个底部导航栏——三个按钮：▷ 返回、○ 桌面、▢ 通知。`position: fixed; bottom: 0`，`backdrop-filter: blur(12px)` 毛玻璃效果。
+
+做完之后用户说"太碍事了"。所有 App 页面本身已经有顶部 `‹` 返回按钮，左上角也有 🏠 主场键。底部再加三个按钮纯属多余——遮挡内容、占用空间。
+
+于是又全删。CSS、HTML、JS 引用全部清理干净。**加功能之前先想清楚是不是真的需要**——这是反复踩坑后的反思。
+
+---
+
+## 文件管理：从 localStorage 到 IndexedDB
+
+最初的 `prFiles()` 只是显示"文件管理"四个字的占位符。用户说要"能上传文件、删除和查看"。
+
+第一版用 `localStorage` 存 base64——和壁纸一样的套路。但用户问了一句："保存到 db 不行吗？"确实——localStorage 5MB 上限对文件来说太紧了，一张稍大的图片就爆仓。
+
+切到 IndexedDB（`pent_db_v1`）：
+
+```javascript
+async function prFiles() {
+  var a = await idbGet('pent_files') || [];
+  // 渲染文件列表...
+}
+async function paddFile() {
+  var f = inp.files[0];
+  if (f.size > 50 * 1024 * 1024) { /* 拒绝 */ }
+  var r = new FileReader();
+  r.onload = async function(e) {
+    var a = await idbGet('pent_files') || [];
+    a.unshift({name: f.name, size: f.size, data: e.target.result, time: Date.now()});
+    await idbPut('pent_files', a);
+    prFiles();
+  };
+  r.readAsDataURL(f);
+  inp.click();
+}
+```
+
+单文件上限从 5MB 提到 **50MB**，最多存 50 个文件。数据持久化，刷新不丢。
+
+还加了文件查看器——点击文件名弹出全屏预览：
+- **图片**（png/jpg/gif/webp/svg）→ `<img>` 全屏展示
+- **PDF** → `<iframe>` 内嵌
+- **文本**（txt/json/xml/html/css/js/md/log/csv）→ `atob()` 解码 base64 后 `<pre>` 展示（最多 50 万字符）
+- **其他格式** → 显示文件名 + 大小 +"📥 下载查看"按钮
+
+---
+
+## 通知中心独立为桌面 App
+
+原本的通知中心只能通过屏幕顶部下滑手势触发（`touchmove` 监听），桌面端鼠标没法下滑。改成了独立的桌面 App——🔔 图标，点进去看所有历史通知。
+
+改动很小：`PAPPS` 数组加一个 `{id:'paNotify', icon:'🔔', label:'通知'}`，`popenApp` 加一个分支调用 `prNotify()`，再加一个 `<div class="pent-app" id="paNotify">` 面板。`prNotify()` 直接从全局 `_pnotifs` 数组渲染列表——和通知横幅共享同一份数据。
+
+这样桌面端和手机端都能方便查看通知，不用记"下滑"这个隐藏手势。
+
+---
+
+## 音乐 App：从占位符到多平台播放器
+
+音乐是最初 14 个 App 之一，但一直只是个占位符——点进去显示"音乐"就没了。这次做了完整升级：
+
+### 本地文件导入
+
+`<input type="file" accept="audio/*,video/*">`，支持 MP3/MP4/WebM 等格式。和文件管理一样走 IndexedDB（`pent_music`），单文件上限 200MB。
+
+### 多平台链接识别
+
+直接贴链接播放在多数情况下是行不通的——大多数音视频网站不提供直链。参考微信的"分享歌单"体验，改成**识别平台、对应处理**：
+
+| 平台 | 链接特征 | 播放方式 |
+|------|----------|----------|
+| 网易云音乐 | `music.163.com/#/song?id=xxx` | iframe 内嵌播放器 |
+| QQ 音乐 | `y.qq.com/songDetail/xxx` | iframe 内嵌播放器 |
+| B 站 | `bilibili.com/video/BVxxx` | iframe 内嵌播放器 |
+| YouTube | `youtube.com/watch?v=xxx` | iframe 内嵌播放器 |
+| 酷狗/酷我/抖音 | `kugou.com`/`kuwo.cn`/`douyin.com` | 跳浏览器打开（平台限制无法嵌入） |
+| 直链 | `.mp3`/`.mp4` 结尾 | 原生 `<audio>`/`<video>` 播放 |
+
+URL 解析用正则逐层匹配：
+
+```javascript
+var m163 = url.match(/music\.163\.com.*[?&;]id=(\d+)/i);
+var mQQ  = url.match(/y\.qq\.com.*song(?:Detail|id)[=/](\w+)/i);
+var mBili = url.match(/bilibili\.com\/video\/(BV\w+)/i);
+var mYT  = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/i);
+// ...更多平台
+```
+
+### 播放器 UI
+
+统一的播放器面板——进度条拖拽、播放/暂停、上/下一首、随机播放全部。视频自动切换为 16:9 `<video>` 容器。歌单显示平台图标（🎶 音乐 / 🎬 视频 / 🌐 直链 / 📁 本地），一目了然。
+
+---
+
 ## 总结
 
 桌面系统主体 ~500 行 CSS + ~600 行 JS = ~1100 行。大部分时间没花在写代码上——花在调 CSS 图层冲突、变量名不一致、壁纸上传的七次尝试、时钟标签的事件绑定方式切换。
 
 最大的教训：**在 9600 行的现有文件上加功能，改一个 CSS 属性能影响三处、改一个变量名能静默失败四个地方。** 备份文件救了很多次命——每次大改动前先 `cp` 一份，不行就回退。
 
-现在这个 9800 行的 HTML 文件，打开是一个手机桌面——锁屏、图标、App、通知、壁纸。点 Phone 图标进入完整 AI 聊天应用。双击就用，零依赖。
+现在这个 9775 行的 HTML 文件，打开是一个手机桌面——锁屏、图标、17 个 App（拍照、相册、文件、音乐、备忘录、日历、时钟、计算器、天气、电话、短信、地图、商店、设置、通知、Phone、小游戏）、通知、壁纸。点 Phone 图标进入完整 AI 聊天应用。双击就用，零依赖。
+
+整个开发过程最深的感受：**在已有的复杂代码上做增量，最大的成本不是写新代码，而是弄清楚旧代码的每一行在干什么。** 备份-修改-验证-回退的循环跑了不下十次，每次回退都学到一点东西——CSS 简写和分离属性的优先级、`!important` 对 inline style 的覆盖、文本节点的 `.closest()` 陷阱、IndexedDB 存大文件比 localStorage 靠谱得多。
 
 ---
 
-*下一篇：短信系统升级——让桌面短信变身真正的聊天 App。*
+*下一篇：文件系统的进一步优化——IndexedDB 直接存 Blob 而非 base64，以及让桌面短信变身真正的聊天 App。*
