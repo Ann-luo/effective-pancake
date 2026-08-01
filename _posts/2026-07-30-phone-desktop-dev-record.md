@@ -40,7 +40,16 @@
 32. [游戏商店化](#ch32)
 33. [桌面翻页适配](#ch33)
 34. [查手机 App：AI 帮你检查手机里的所有数据](#ch34)
-35. [总结](#ch35)
+35. [统一 API 层：重试 + 错误 Toast](#ch35)
+36. [桌面图标角标](#ch36)
+37. [桌面主题切换](#ch37)
+38. [一键备份恢复](#ch38)
+39. [桌面小组件](#ch39)
+40. [欢迎弹窗的 z-index 之谜](#ch40)
+41. [真实天气：wttr.in](#ch41)
+42. [关键发现：你的 APK 是 HTML5+ 打包的](#ch42)
+43. [相册与文件的导出之路](#ch43)
+44. [总结](#ch44)
 
 
 ---
@@ -907,8 +916,420 @@ Phone 同步是最折腾的部分——查手机时 Phone App 通常是隐藏的
 
 ---
 
-<h2 id="ch35">35. 总结</h2>
+<h2 id="ch35">35. 统一 API 层：重试 + 错误 Toast</h2>
 {: #ch35}
+
+### 为什么要做
+
+查手机、短信、朋友圈、日记……一共 8 处直接调 DeepSeek API。每处都自己写 fetch，错误处理五花八门——有的返回离线回复、有的直接断掉、有的静默失败。用户问了一个很实在的问题："Key 错了能不能明确提示？网络抖动能不能重试？"
+
+### 设计方案
+
+不做大重构，加一个统一 API 层，让现有调用点逐步接入：
+
+- papiFetch() —— 单次非流式请求，返回 {ok, status, data}
+- papiStream() —— 单次流式请求，onChunk 回调
+- papiRetry() —— 带重试的包装（3 次，1s/3s/8s 退避）
+- papiErrorToast() —— 错误分类提示
+
+```javascript
+// 核心：错误分类
+function papiErrorToast(status) {
+  if (status === 401 || status === 403) {
+    // Key 无效 → 红 Toast，10 秒内不重复弹
+    return 'key';
+  }
+  if (status === 429) { return 'busy'; }
+  return 'default';
+}
+
+// 重试循环
+async function papiRetry(messages, opts) {
+  var delays = [1000, 3000, 8000];
+  for (var attempt = 0; attempt <= 3; attempt++) {
+    var r = await papiFetch(messages, opts);
+    if (r.ok) return r;
+    if (r.status === 401 || r.status === 403 || r.status === 429) return r;
+    await new Promise(function(res){ setTimeout(res, delays[attempt]); });
+  }
+  return r;
+}
+```
+
+### Bug：两个 return 之间缺分号
+
+写完跑语法检查，报 "Unexpected token 'return'"。定位半天发现：
+
+```javascript
+if (e.name === 'AbortError') return {...aborted:true} return {...error:e}
+//                                   ^ 这里缺分号，第二个 return 变成语法错误
+```
+
+修法：if 块用大括号包住。
+
+### 效果
+
+- Key 错误 → 红 Toast"🔑 API Key 无效"，不再假装网络问题
+- 429 限流 → "⏳ 请求太频繁"
+- 网络抖动 → 3 次重试后还失败才报错
+- 查手机的定时检查已接入 papiRetry，短信主动发信保持流式不走重试（流式重试容易重复输出）
+---
+
+<h2 id="ch36">36. 桌面图标角标</h2>
+{: #ch36}
+
+### 需求
+
+短信、通知有未读时，用户不点进去根本不知道。要像真手机一样在图标右上角显示红点数字。
+
+### 数据来源
+
+- 通知角标 = _pnotifs 数组长度（未清除的通知数）
+- 短信角标 = 统计所有 Agent × 房间短信里 role==='ai' 且 time > 上次打开时间的条数
+
+### 已读时间戳
+
+短信"已读"需要一个基准时间。用一个 localStorage key 记录上次打开短信的时刻：
+
+```javascript
+function pmarkSMSRead() {
+  localStorage.setItem('pent_sms_lastread', String(Date.now()));
+  pupdateBadges();
+}
+function pupdateBadges() {
+  // 遍历所有 Agent 所有房间的短信
+  // 统计 ai 消息且 time > lastread 的条数
+  // 写入 #badge_paMessages 红点
+}
+```
+
+打开短信列表或任意聊天窗口都调 pmarkSMSRead()，角标清零。
+
+### CSS 红点
+
+```css
+.papp-badge{
+  position:absolute;top:-4px;right:-4px;
+  min-width:18px;height:18px;border-radius:9px;
+  background:#ff3b30;color:#fff;font-size:11px;
+  display:flex;align-items:center;justify-content:center;
+}
+```
+
+.papp-img 加 position:relative，红点定位到右上角。
+
+### Bug：清空通知后角标变回 1
+
+pclearNotifs() 清空 _pnotifs 后调 pnotify({title:'通知已清除'})——又 push 了一条新通知，角标立刻显示 1。用户刚清完看到红点还在，很困惑。
+
+修法：给 pnotify 加 silent 选项，清除通知这种"系统消息"不更新角标。
+
+```javascript
+if (o.silent !== true) pupdateBadges();
+pnotify({title:'通知已清除', icon:'✅', silent:true});
+```
+---
+
+<h2 id="ch37">37. 桌面主题切换</h2>
+{: #ch37}
+
+### 需求
+
+桌面一直是固定深蓝渐变。用户想要几套预设一键切——深蓝/暗黑/浅色。
+
+### 实现
+
+不重写 CSS 变量系统（风险大），只切桌面背景渐变 + 图标文字颜色：
+
+```javascript
+var pTHEMES = {
+  blue:  'linear-gradient(180deg,#1a1a2e,#16213e,#0f3460)',
+  dark:  'linear-gradient(180deg,#0d0d0d,#161616,#222)',
+  light: 'linear-gradient(180deg,#e9edf2,#d9dfe6,#c6cfd9)',
+};
+function psetTheme(name) {
+  localStorage.setItem('pent_theme', name);
+  _pdt.style.background = pTHEMES[name] + ' center/cover';
+  var dark = name === 'light';
+  // 浅色时图标文字变深，否则白色看不清
+  document.querySelectorAll('.pdt-page .papp-label, .pdock .papp-label')
+    .forEach(el => el.style.color = dark ? '#333' : '#fff');
+}
+```
+
+### 和壁纸的优先级
+
+主题和壁纸是两套东西。加载时：有壁纸用壁纸，没壁纸用主题。
+
+```javascript
+var _pw = localStorage.getItem('pent_wp');
+if (_pw) _pdt.style.background = 'url(...)';
+if (!_pw) papplyTheme();
+```
+
+恢复默认壁纸（presetWP）时也调 papplyTheme，这样"恢复壁纸"回到的是当前主题而不是硬编码深蓝。
+
+### 设置 UI
+
+设置 App 里加三行：🌌 深蓝 / 🖤 暗黑 / ☀️ 浅色，当前主题打 ✓。
+---
+
+<h2 id="ch38">38. 一键备份恢复</h2>
+{: #ch38}
+
+### 需求
+
+数据全在 IndexedDB 和 localStorage，但用户无法迁移——换手机、重装 APK 数据全丢。要一键导出全部数据为 JSON，换设备导入。
+
+### 导出逻辑
+
+```javascript
+async function pbackup() {
+  var data = { v:1, ls:{}, idb:{}, t:Date.now() };
+  // 1. 遍历 localStorage，收集所有 pent_ 开头的 key
+  // 2. 打开 pent_db_v1，getAll() 收集全部记录
+  // 3. JSON.stringify 打包
+}
+```
+
+包含：所有 Agent 的聊天记录（room_*）、朋友圈、记忆、短信、照片、文件、音乐——全部。
+
+### 导入逻辑
+
+读回 JSON → localStorage.setItem 恢复 → idbPut 恢复 → 提示刷新生效。
+
+```javascript
+for (var k in data.ls) { localStorage.setItem(k, data.ls[k]); }
+for (var idbk in data.idb) { await idbPut(idbk, data.idb[idbk]); }
+```
+
+### 踩的坑：下载失败
+
+导出后要下载 JSON 文件。第一版用 <a download> blob——浏览器正常，但 APK 里静默失败（WebView 没配 DownloadListener）。
+
+第二版试 navigator.share——APK 里根本不存在这个 API，还是不弹。
+
+折腾半天发现项目里有个 saveFileToDevice 函数，Phone 导出记忆、导出聊天、导出待办全用它，一直能用！它内部判断：
+
+```javascript
+if (_isApp && plus.io) {
+  // HTML5+ 环境：plus.io 写 _doc/ + plus.share.sendWithSystem 弹分享面板
+} else {
+  // 浏览器：<a download>
+}
+```
+
+关键发现：这个 APK 是 HTML5+（HBuilder）打包的，不是普通 WebView！项目里有 plus 全局对象，能调原生能力。我一开始用错 API（navigator.share），绕过了本来就该用的 saveFileToDevice。
+
+修法：备份导出的"保存"按钮直接调 saveFileToDevice，和 Phone 导出一模一样。
+---
+
+<h2 id="ch39">39. 桌面小组件</h2>
+{: #ch39}
+
+### 需求
+
+用户不想点进 App 才能看时间和天气——要像真手机桌面一样，时钟和天气直接显示在桌面上。
+
+### 布局
+
+桌面顶部加一行小组件栏：
+
+```html
+<div class="pdt-widgets">
+  <div class="pdt-w-clock"><span id="pdtwtime">--:--</span><span id="pdtwdate"></span></div>
+  <div class="pdt-w-weather" onclick="popenApp('paWeather')"></div>
+</div>
+```
+
+时钟组件 30 秒刷新，天气组件点一下跳进天气 App。
+
+### 复用天气逻辑
+
+原来 prWeather 里生成天气的代码直接重构成 pgetWeather() 返回对象，小组件和 App 共用：
+
+```javascript
+function pgetWeather() {
+  // 返回 {icon, type, high, low, fh}
+}
+function prWeather() { var w = pgetWeather(); ... }
+function pdtUpdateWidgets() { var w = pgetWeather(); ... }
+```
+
+一处生成，两处使用，避免天气不一致。
+
+### CSS
+
+半透明毛玻璃卡片（backdrop-filter: blur），和桌面深蓝背景融合。时钟 28px 细体数字，天气显示图标 + 温度。
+---
+
+<h2 id="ch40">40. 欢迎弹窗的 z-index 之谜</h2>
+{: #ch40}
+
+### 症状
+
+"👋 欢迎使用"弹窗不出现了，只在通知中心里能找到——横幅根本不显示。
+
+### 排查
+
+1. 通知确实进了 _pnotifs（通知中心能看到），说明 pnotify 被调用了
+2. 但横幅 .pent-nb 不显示
+
+看 CSS：
+
+```css
+.pent-nb { z-index: 6000; }      /* 通知横幅 */
+.pent-ls { z-index: 999999; }    /* 锁屏 */
+```
+
+锁屏 999999 完全盖住了横幅 6000。欢迎弹窗在锁屏时触发，横幅被锁屏挡在下面。
+
+而且逻辑还有个条件 if(!_plsLocked)——要求已解锁才弹。初始锁屏时 _plsLocked=true，2 秒后没解锁就永远不弹。
+
+### 修复
+
+1. 横幅 z-index 从 6000 提到 9999999（比锁屏高，锁屏也能看通知——和真手机一致）
+2. 去掉 if(!_plsLocked) 条件，欢迎弹窗总是显示
+
+```css
+.pent-nb { z-index: 9999999; }
+```
+
+修完锁屏时也能看到通知横幅弹出了。
+---
+
+<h2 id="ch41">41. 真实天气：wttr.in</h2>
+{: #ch41}
+
+### 需求
+
+随机生成的天气毕竟是假的。用户想要"联网获取真实天气"，但保留随机作为默认。
+
+### 方案
+
+保留随机生成 + 天气 App 里加一个"🌐 联网获取真实天气"按钮。
+
+用 wttr.in 免费 API——无 key、按 IP 自动定位城市、浏览器和 APK 都通用、不申请任何系统权限：
+
+```javascript
+var resp = await fetch('https://wttr.in/?format=j1&lang=zh',
+  { signal: AbortSignal.timeout(8000) });
+var data = await resp.json();
+var cur = data.current_condition[0];   // 实时温度、体感
+var loc = data.nearest_area[0];         // 城市名
+var days = data.weather.slice(0, 3);    // 今天/明天/后天预报
+```
+
+### 天气代码映射
+
+wttr.in 返回天气代码（weatherCode），要映射成 emoji：
+
+```javascript
+function pwxIcon(code) {
+  var m = { 113:'☀️', 116:'⛅', 119:'☁️', 176:'🌧️', 200:'⛈️', 227:'🌨️' };
+  return m[code] || '🌤️';
+}
+```
+
+### 失败兜底
+
+8 秒超时 + try/catch，失败提示"请检查网络后重试"，不崩溃。获取成功后有"🔄 返回随机天气"按钮切回去。
+---
+
+<h2 id="ch42">42. 关键发现：你的 APK 是 HTML5+ 打包的</h2>
+{: #ch42}
+
+### 为什么备份导出折腾了那么久
+
+用户反复说"微信导出可以，我的备份为什么不行"。追查发现根因是我用错了 API：
+
+| 我用的 | 实际该用的 |
+|--------|-----------|
+| navigator.share（Web API） | plus.share.sendWithSystem（HTML5+ 原生） |
+| <a download>（需要 DownloadListener） | plus.io 写 _doc/（直接写 App 目录） |
+
+项目里一直有个 saveFileToDevice 函数，Phone 的导出记忆、导出聊天、导出待办全用它，在 APK 里一直能用。它内部：
+
+```javascript
+if (_isApp && typeof plus !== 'undefined' && plus.io) {
+  // HTML5+ 环境：plus.io 写文件 + plus.share.sendWithSystem 弹分享
+  return true;
+}
+// 浏览器：<a download>
+```
+
+### 大白话解释
+
+这个 APK 不是普通的"网页套壳"，而是用 HBuilder（HTML5+）打包的。HBuilder 打包时会往网页里塞一个 plus 对象——它是网页和手机系统之间的翻译官，让网页能调写文件、分享面板等原生能力。
+
+微信导出能用，是因为它调 Android 原生分享 Intent；我的备份一开始用网页通用 API（navigator.share），这个 APK 的 WebView 不支持——不是代码问题，是 API 选错了。
+
+### 教训
+
+在 HBuilder 打包的项目里做文件操作，优先找项目里已有的 plus 封装函数（saveFileToDevice），而不是自己发明网页 API 方案。项目里能用的东西一直在那儿，只是我没先翻代码。
+
+### 换打包方式的后果
+
+| 打包方式 | plus 对象 | 备份/导出 |
+|---------|-----------|-----------|
+| HBuilder (HTML5+) | 有 | ✅ 完美 |
+| 普通 WebView 套壳 | 无 | ⚠️ 退回 <a download> |
+| 浏览器 | 无 | ✅ 下载正常 |
+
+所以代码里做了双保险：有 plus 走 plus，没 plus 退回浏览器下载——两套都能跑。
+---
+
+<h2 id="ch43">43. 相册与文件的导出之路</h2>
+{: #ch43}
+
+### 需求
+
+用户问：相册和文件管理系统能不能也做个导出功能，走 saveFileToDevice 那套？浏览器和 APK 一套方案。
+
+### 相册导出
+
+顶部加"📤 导出相册"按钮 → 生成 HTML 相册（所有照片 base64 内嵌，双列瀑布流）→ saveFileToDevice。
+
+每张照片下方加"⬇ 下载原图"链接——APK 里触发 plus 下载，浏览器里下载。
+
+```javascript
+async function pexportAlbum() {
+  var a = await idbGet('pent_photos') || [];
+  var h = '<!DOCTYPE html>...' + a.length + '张</div>';
+  for (var i = 0; i < a.length; i++) {
+    h += '<img src="' + a[i].d + '"><a href="' + a[i].d +
+         '" download="photo_' + (i+1) + '.jpg">⬇ 下载原图</a>';
+  }
+  saveFileToDevice('相册_日期.html', h, 'text/html;charset=utf-8');
+}
+```
+
+### 文件导出
+
+文件查看器右上角加"📤"按钮。踩了个坑：直接 saveFileToDevice(f.data) 导出的是 data URL 文本（data:image/png;base64,... 这串字），不是真实文件。
+
+智能处理：
+
+- 文本类（txt/md/json/csv 等）→ atob 解码 base64 → 导出原文
+- 二进制（图片/音视频/PDF）→ 生成 HTML 展示页（能直接看/播 + 内含"⬇ 下载原文件"链接）
+
+```javascript
+if (/.(txt|md|log|json|xml|html|css|js|csv)$/i.test(name)) {
+  var txt = decodeURIComponent(escape(atob(b64)));  // 导出原文
+} else {
+  // 生成 HTML：图片直接显示/音频播放/视频播放/PDF内嵌
+  // + <a href="dataUrl" download>⬇ 下载原文件</a>
+}
+```
+
+### 统一方案
+
+相册、文件、备份三处全部走 saveFileToDevice——一个函数，APK 走 plus，浏览器走下载，一套代码两端适配。
+---
+
+<h2 id="ch44">44. 总结</h2>
+{: #ch44}
+
 
 
 
@@ -916,7 +1337,7 @@ Phone 同步是最折腾的部分——查手机时 Phone App 通常是隐藏的
 
 最大的教训：**在 9700 行的现有文件上加功能，改一个 CSS 属性能影响三处、改一个变量名能静默失败四个地方。** 备份文件救了很多次命——每次大改动前先 `cp` 一份，不行就回退。
 
-现在这个 ~9840 行的 HTML 文件，打开是一个手机桌面——锁屏、图标、17 个 App（拍照、相册、文件、音乐、备忘录、日历、时钟、计算器、天气、电话、短信、地图、商店、设置、通知、Phone、小游戏）、通知、壁纸。点 Phone 图标进入完整 AI 聊天应用。双击就用，零依赖。
+现在这个 ~9870 行的 HTML 文件，打开是一个手机桌面——锁屏、图标、17 个 App（拍照、相册、文件、音乐、备忘录、日历、时钟、计算器、天气、电话、短信、地图、商店、设置、通知、Phone、小游戏）、通知、壁纸。点 Phone 图标进入完整 AI 聊天应用。双击就用，零依赖。
 
 整个开发过程最深的感受：**在已有的复杂代码上做增量，最大的成本不是写新代码，而是弄清楚旧代码的每一行在干什么。** 备份-修改-验证-回退的循环跑了不下十次，每次回退都学到一点东西——CSS 简写和分离属性的优先级、`!important` 对 inline style 的覆盖、文本节点的 `.closest()` 陷阱、IndexedDB 存大文件比 localStorage 靠谱得多、PowerShell 正则不要往混合 HTML/JS 的大文件里瞎怼。
 
