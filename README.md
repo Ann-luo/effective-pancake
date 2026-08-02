@@ -44,7 +44,7 @@
 | 4.4 | [从零到一：AI 聊天应用全栈开发记录](./_posts/2026-07-23-AI聊天应用开发全记录.md) | 单文件 ~9600 行，含多智能体 + 流式 + 多气泡 + 沉默 + 日记 + 朋友圈 + 锁屏 + IndexedDB + 平行宇宙 + 时间线 + 共享待办 + 共享歌单 + 钱包系统 + 图片裁剪 + 礼物互动 + 导出统一 + APK 自适应 + 导入全覆盖 + 字卡系统（无 API 也能聊） |
 | 　 | 　└ [Phone 脱敏通用版](./_posts/2026-07-28-phone-ai-chat-app.md) | 📥 [下载 phone.html](./assets/phone.html) · 去掉角色设定，开箱即用 |
 | 4.5 | [HBuilder 本地调试实录 — 不消耗云打包额度](./_posts/2026-07-27-hbuilder-local-debug.md) | Android SDK + AVD 命令行搭建，零额度反复调试 APK |
-| 4.6 | [手机桌面模拟器开发全记录](./_posts/2026-07-30-phone-desktop-dev-record.md) | 锁屏+桌面+14个App+通知系统，单文件 ~9800 行 |
+| 4.6 | [手机桌面模拟器开发全记录](./_posts/2026-07-30-phone-desktop-dev-record.md) | 锁屏+桌面+22个App+7个小游戏+小组件+钱包，单文件 ~9970 行，59章全记录 |
 
 ### 五、杂项
 
