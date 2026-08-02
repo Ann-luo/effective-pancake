@@ -65,6 +65,11 @@
 57. [游戏代码插入位置的教训](#ch57)
 58. [积分用途：解锁隐藏主题](#ch58)
 59. [总结](#ch59)
+60. [APK 环境的五个 Bug 修复](#ch60)
+61. [查手机与短信的 API 故障：papiStream 之殇](#ch61)
+62. [对比备份 11：signal 参数的血案](#ch62)
+63. [导出功能的路径统一](#ch63)
+64. [总结](#ch64)
 
 
 ---
@@ -1868,9 +1873,214 @@ c = c.substring(0, lastIdx) + games + c.substring(lastIdx);
 
 ---
 
-<h2 id="ch59">59. 总结</h2>
-{: #ch59}
+<h2 id="ch60">60. APK 环境的五个 Bug 修复</h2>
+{: #ch60}
 
+前面的开发全在桌面浏览器和模拟器里测。打包成 APK 装到手机上之后，一口气冒出五个只在真机 WebView 里才有的 bug。
+
+### 1. 📷 拍照后相册黑屏
+
+`pcam()` 用 Canvas 压缩照片（400px JPEG），流程是 FileReader → Image → Canvas → `toDataURL('image/jpeg', 0.5)`。模拟器正常，真机拍出来的全是黑图。
+
+根因：手机摄像头照片 4000×3000+ 像素，`drawImage` 时超过 Android WebView 的 **Canvas GPU 最大纹理尺寸**，静默失败，`toDataURL` 返回一张全黑图。
+
+修法：在 `pcam` 和 `paddPhoto` 里，`toDataURL('image/jpeg')` 失败时自动回退 `toDataURL('image/png')`。JPEG 依赖 GPU 纹理，PNG 走 CPU，WebView 里更稳定。
+
+```javascript
+var d;
+try { d = c.toDataURL('image/jpeg', 0.5); }
+catch(e2) { d = c.toDataURL('image/png'); }
+```
+
+### 2. 📥 设置导入只弹相机
+
+`prestore()` 用 `<input type="file" accept=".json">`。Android WebView 对 `accept=".json"` 的支持极差——很多 ROM 直接忽略，只弹相机。
+
+修法：`accept` 放宽为 `"application/json,.json,text/plain,*/*"`，系统文件选择器正常出来了。
+
+### 3. 📁 文件导出 0 字节
+
+`pexportFile` 文本解码用 `atob → escape → decodeURIComponent` 三连链。三个函数任意一环抛异常就静默返回空字符串，导出 0 字节文件。
+
+修法：双层 try/catch 容错——主链路失败 → 裸 `atob` → 全败则用原始 data。
+
+```javascript
+var b64 = data.split(',')[1] || data;
+try { txt = decodeURIComponent(escape(atob(b64))); }
+catch(ee) { try { txt = atob(b64); } catch(ee2) { txt = data; } }
+```
+
+### 4. 🖼️ 相册导出 HTML 下载链接无效
+
+`pexportAlbum()` 生成自包含 HTML，里面有 `<a href="data:image/jpeg;base64,..." download="photo.jpg">`。APK WebView 没有 `DownloadListener`，点击毫无反应。
+
+修法：下载链接改为"📌 长按图片保存到相册"提示。data URL 在 WebView 里 `<a download>` 是死路。
+
+### 5. 拍照/上传的整体加固
+
+给 `pcam` 和 `paddPhoto` 加外层 try/catch，整个拍照流程包在错误处理里，任何一步失败都 toast 提示而不是静默。
+
+---
+
+<h2 id="ch61">61. 查手机与短信的 API 故障：papiStream 之殇</h2>
+{: #ch61}
+
+### 症状
+
+APK 上查手机模块显示"API error net"，短信发送没反应。但 Phone 微信聊天完全正常。
+
+### 排查
+
+三个模块的 API 调用路径对比：
+
+| 模块 | API 函数 | 调用链 | 状态 |
+|------|---------|--------|:--:|
+| Phone 微信 | `callDeepSeek` | 自有 fetch 实现 | ✅ |
+| 查手机 | `callDeepSeekForSMS` | → `papiStream` | ❌ |
+| 短信 | `callDeepSeekForSMS` | → `papiStream` | ❌ |
+
+`papiStream` 是第 35 章加的"统一 API 层"——一个流式 fetch 的封装。Phone 用自己的 `callDeepSeek` 绕过了它，所以不受影响。
+
+### 短信"没反应"的真相
+
+`psmsSendMsg` 的 catch 块只做了一件事：
+
+```javascript
+} catch(e) {
+  psmsOpenChat(_psmsAgentId, _psmsRoomId); // 只重渲，不弹任何提示
+}
+```
+
+API 报错了，用户完全不知道——消息发出去、聊天窗口刷新、就是等不到回复。看起来像"没反应"，实际上是"错误被吞了"。
+
+### 查手机"API error net"
+
+`papiStream` 的 fetch 失败时返回 `status: 0`（不是 HTTP 错误码），`callDeepSeekForSMS` 拼接成 `'API error net'`。没有重试机制，一次失败直接报错。
+
+### 第一轮修复
+
+1. `psmsSendMsg` 加错误 toast，不再吞错
+2. `callDeepSeekForSMS` 加 3 次重试（1.5s/3s/4.5s 递增）
+3. `papiStream` 加详细错误分类
+
+修完测试——重试确实跑了（显示"尝试 3 次"），但全部失败。Phone 依然正常。问题不在重试，在 `papiStream` 本身。
+
+---
+
+<h2 id="ch62">62. 对比备份 11：signal 参数的血案</h2>
+{: #ch62}
+
+### 回到能用的版本
+
+用户提醒对比能用的旧版本。打开备份 11（7 月 31 日），发现一个关键事实：
+
+**备份 11 根本没有 `papiStream` 这个函数。**
+
+旧版 `callDeepSeekForSMS` 是自己直接调 `fetch` 的——和 Phone 的 `callDeepSeek` 一模一样，只是 prompt 不同。
+
+```javascript
+// 备份 11 能用的版本
+function callDeepSeekForSMS(messages, onChunk, ac) {
+  return new Promise(function(resolve, reject) {
+    fetch('https://api.deepseek.com/v1/chat/completions', {
+      headers: { 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: modelName || 'deepseek-chat',
+        messages: messages,
+        temperature: 0.9,
+        max_tokens: 300,
+        stream: true
+      }),
+      signal: ac.signal  // ← 注意：ac.signal，不是 ac
+    }).then(...)
+  })
+}
+```
+
+对比新版 `papiStream`：
+
+```javascript
+// 新版 papiStream（挂了）
+fetch('...', {
+  signal: opts.signal  // ← 收到的是 AbortController 本体，不是 .signal！
+})
+```
+
+**`fetch()` 的 `signal` 参数要的是 `AbortSignal`。传 `AbortController` 本体进去，APK WebView 的 fetch 实现直接断连 → status 0 → "net"。**
+
+### 为什么模拟器没问题
+
+桌面 Chrome 对 `signal` 参数更宽容——传 Controller 进去会自动取 `.signal`。Android WebView 的 fetch polyfill 没这么聪明，直接报网络错误。
+
+### 修复
+
+1. `papiStream` / `papiFetch` 的 signal 改成 `opts.signal?.signal || opts.signal`，兼容两种传法
+2. `callDeepSeekForSMS` 彻底回退到备份 11 的风格——自己直接调 `fetch`，不再经过 `papiStream` 中间层
+3. 保留重试 + 降级逻辑：流式失败 → 自动切非流式（`stream: false` + `resp.json()`）
+
+教训：
+
+- **"统一 API 层"不一定是好东西。** 多一层封装就多一个出错点。旧代码直接调 `fetch` 用得好好的，加个 `papiStream` 反而引入了一个 WebView 兼容性 bug。
+- **对比旧版本是最快的调试方法。** 与其逐行猜测 `papiStream` 哪里不对，不如直接 diff 能用的备份 11——一分钟定位到 `signal` 参数差异。
+
+---
+
+<h2 id="ch63">63. 导出功能的路径统一</h2>
+{: #ch63}
+
+### 症状
+
+设置备份导出在模拟器上正常，实体手机 APK 上点"导出备份"没反应。文件导出也类似——在实体机上文件名都丢了。
+
+但待办导出、日记导出、歌单导出在实体机上完全正常。
+
+### 对比排查
+
+| 导出 | 调用方式 | 模拟器 | 实体机 |
+|------|---------|:--:|:--:|
+| 待办/日记/歌单 | `saveFileToDevice()` 直接调 | ✅ | ✅ |
+| 设置备份 | `pbackup()` → `pbackupShare()` 底部面板 → 点按钮 → `saveFileToDevice()` | ✅ | ❌ |
+| 文件导出 | 200 行 HTML 模板生成 → `saveFileToDevice()` | ✅ | ❌ |
+
+差异就一个：**能用的直接调，不能用的中转了一层。**
+
+设置备份的问题更隐蔽——面板按钮的 onclick 包了 `try { fn() } catch(e) {}`。`saveFileToDevice` 在 APK 里走 H5+ 异步回调（`plus.io.resolveLocalFileSystemURL`），如果第一步就抛异常，错误被 try/catch 吞掉，用户什么都看不到。模拟器走浏览器 `<a download>` 分支，不触发这个异常。
+
+### 修复
+
+**路径统一**：三个有问题的导出全部改成和其他导出一样的直接调用：
+
+```javascript
+// 设置备份：直接导出优先，面板降级
+var json = JSON.stringify(data);
+if (typeof saveFileToDevice === 'function') {
+  try {
+    saveFileToDevice(fname, json, 'application/json;charset=utf-8');
+    pnotify({ title: '💾 备份已导出', text: fname, icon: '💾' });
+  } catch(e) {
+    pbackupShare(json, fname); // 降级到面板
+  }
+}
+
+// 文件导出：去掉 200 行 HTML 包装，直出原始数据
+saveFileToDevice(name, content, isText ? 'text/plain' : 'application/octet-stream');
+```
+
+### 模拟器 vs 实体机的根本差异
+
+`saveFileToDevice` 内部有两套逻辑：
+
+| 环境 | 分支 | 机制 |
+|------|------|------|
+| 浏览器/模拟器 | `_isApp` = false | `<a download>` Blob 下载 |
+| APK 实体机 | `_isApp` = true, `plus.io` 可用 | `plus.io` 写文件 + `plus.share.sendWithSystem` 弹分享 |
+
+模拟器上 `<a download>` 一直能用，所以什么导出都正常。实体机上 `plus.io` 有异步回调 + 权限限制，多一层面板中转就会丢错误。直接调 `saveFileToDevice` 让 H5+ 回调正常执行，分享面板就能弹出来。
+
+---
+
+<h2 id="ch64">64. 总结</h2>
+{: #ch64}
 
 
 
@@ -1884,8 +2094,16 @@ c = c.substring(0, lastIdx) + games + c.substring(lastIdx);
 
 整个开发过程最深的感受：**在已有的复杂代码上做增量，最大的成本不是写新代码，而是弄清楚旧代码的每一行在干什么。** 备份-修改-验证-回退的循环跑了不下十次，每次回退都学到一点东西——CSS 简写和分离属性的优先级、`!important` 对 inline style 的覆盖、文本节点的 `.closest()` 陷阱、IndexedDB 存大文件比 localStorage 靠谱得多、PowerShell 正则不要往混合 HTML/JS 的大文件里瞎怼。
 
-这次的额外教训是：**交互方案的选择优先级：结构 > 事件 > 定时器。** 小组件跟随分页用结构解决（嵌进 page）比滚动监听可靠；扫雷标旗用显式按钮比长按定时器可靠；文件夹管理用点选式比拖拽进出可靠。每次从"事件/定时器"退回到"结构/按钮"，代码都更简单、bug 更少。
+交互方案的选择优先级：**结构 > 事件 > 定时器。** 小组件跟随分页用结构解决（嵌进 page）比滚动监听可靠；扫雷标旗用显式按钮比长按定时器可靠；文件夹管理用点选式比拖拽进出可靠。
+
+APK 兼容性教训：**模拟器 ≠ 真机。** Canvas GPU 纹理限制、fetch 的 signal 参数类型、WebView 的 DownloadListener 缺失、H5+ 异步回调的 try/catch 陷阱——这些只在真机上才暴露。每次大改动后必须在真机上验证导出/导入/API 调用这些关键路径。
+
+代码考古学：**备份是最好的调试工具。** 遇到"以前能用现在不行"的问题，第一时间 diff 旧版本——五处关键修复里有三处是对比备份 11 找到的根因。
 
 ---
 
 *下一篇：文件系统的进一步优化——IndexedDB 直接存 Blob 而非 base64，以及让桌面短信变身真正的聊天 App。*
+
+---
+
+
