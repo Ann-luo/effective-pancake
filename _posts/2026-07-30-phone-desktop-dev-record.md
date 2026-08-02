@@ -70,6 +70,11 @@
 62. [对比备份 11：signal 参数的血案](#ch62)
 63. [导出功能的路径统一](#ch63)
 64. [总结](#ch64)
+65. [备份导出 0 字节谜案](#ch65)
+66. [文件导出的格式之争](#ch66)
+67. [H5+ 存储路径的降级链](#ch67)
+68. [浏览器与 APK 的双轨制](#ch68)
+69. [总结](#ch69)
 
 
 ---
@@ -2079,8 +2084,135 @@ saveFileToDevice(name, content, isText ? 'text/plain' : 'application/octet-strea
 
 ---
 
-<h2 id="ch64">64. 总结</h2>
-{: #ch64}
+<h2 id="ch65">65. 备份导出 0 字节谜案</h2>
+{: #ch65}
+
+### 症状
+
+设置里的"导出备份"在模拟器上正常，实体手机 APK 上：文件 0 字节，分享面板不弹。但待办导出、日记导出、歌单导出全正常。
+
+### 对比排查
+
+所有导出都调用同一个 `saveFileToDevice`，区别只有一个——数据量：
+
+| 导出 | 数据 | 大小 |
+|------|------|:---:|
+| 待办/日记/歌单 | JSON 文本 | 几 KB |
+| **备份** | 全部 localStorage + IndexedDB（含照片/文件/音乐 base64） | **几十 MB** |
+
+`FileWriter.write()` 在 H5+ WebView 里写几十 MB 的字符串——静默失败，文件创建了但内容写不进去 → 0 字节。
+
+### 修复
+
+备份不再塞二进制大对象。`pent_photos`（照片）、`pent_files`（文件）、`pent_music`（音乐）三个 key 只记录数量不存数据：
+
+```javascript
+// 之前：几十 MB base64 全塞进去
+data.idb['pent_photos'] = [{d: 'data:image/jpeg;base64,/9j/...'}, ...]
+
+// 之后：只记"有 37 张照片"
+data.idb['pent_photos'] = {_skip: true, count: 37}
+```
+
+聊天记录、短信、记忆、日记、设置、待办等文本数据完整保留。照片/文件/音乐用各自的导出功能单独导出。
+
+JSON 从几十 MB 瘦身到几十 KB，和待办导出同量级，`writer.write()` 稳定写入。备份"已导出" toast 后面终于跟着一个非零字节的文件了。
+
+---
+
+<h2 id="ch66">66. 文件导出的格式之争</h2>
+{: #ch66}
+
+### 扩展名被强制改 .txt
+
+`saveFileToDevice` 原本只认四种扩展名：`.json`、`.txt`、`.html`、`.htm`。其他后缀一律被改成 `.txt`。一个叫 `photo.png` 的文件导出后变成 `photo.png.txt`。
+
+修复：先检测文件名是否已有合法扩展名（`/\.[a-z0-9]{2,5}$/i`），有就保留，没有才按 MIME 类型补。
+
+### data URL vs 真实二进制
+
+IndexedDB 里的文件是 `readAsDataURL()` 存的——全是 base64 字符串。要导出为真实二进制文件，需要 `atob` 解码 → `Uint8Array` → `ArrayBuffer` 或 `Blob`。
+
+这个过程在浏览器和 APK 上表现不同：
+
+- **浏览器路径**：`new Blob([ArrayBuffer])` → `<a download>` —— 完美，下载的是真二进制
+- **H5+ 路径**：`writer.write(ArrayBuffer)` 或 `writer.write(Blob)` —— 均产生 0 字节。WebView 的 `FileWriter` 只稳定支持字符串写入
+
+折中方案——在 `pexportFile` 里分流：
+
+- 文本文件：base64 解码为 UTF-8 文本，写字符串
+- 二进制文件：保留 data URL 字符串原样，写字符串（文件内容是 `data:image/jpeg;base64,...`，浏览器可直接打开渲染，绝不会 0 字节）
+- 浏览器路径额外做 data URL → 二进制解码，保证下载后是真实文件
+
+---
+
+<h2 id="ch67">67. H5+ 存储路径的降级链</h2>
+{: #ch67}
+
+### 问题
+
+`plus.io.resolveLocalFileSystemURL('_doc/')` 在高版本 Android 上有权限限制。不同设备的私有目录可写性不一致。
+
+### 修复
+
+改成三层降级：
+
+```
+_downloads/  →  公共下载目录（Android 10+ 权限最宽松）
+    ↓ 失败
+_doc/        →  应用私有文档目录
+    ↓ 失败
+_www/        →  应用包内资源目录（只读，但有些 ROM 可以写）
+    ↓ 失败
+toast "存储不可用"
+```
+
+用 `tryPath(path, fallback)` 函数统一调用，一层失败自动尝试下一层。`_downloads/` 在多数设备上一发命中。
+
+### 分享面板
+
+`plus.share.sendWithSystem` 在某些 ROM 上不可用。已加降级：分享失败 → 尝试 `plus.runtime.openFile` 用系统关联应用直接打开文件 → 至少用户知道文件在哪。
+
+---
+
+<h2 id="ch68">68. 浏览器与 APK 的双轨制</h2>
+{: #ch68}
+
+这一轮调试最深的原则收获：
+
+**浏览器路径和 APK 路径必须分开对待。**
+
+| | 浏览器 | APK (H5+) |
+|---|---|---|
+| 文件下载 | `<a download>` Blob URL | `plus.io` + `FileWriter` |
+| 分享 | 不需要（浏览器自带下载） | `plus.share.sendWithSystem` |
+| 数据写入 | `Blob` 稳定 | 只稳定支持字符串 |
+| data URL 处理 | 可以解码为二进制再下载 | 字符串直接写 |
+
+每次改动前先判断：这个修改只影响浏览器、只影响 APK、还是两端？**绝不为了修 APK 去动浏览器分支。** 这一轮踩的最大的坑就是改 `saveFileToDevice` 的 Blob 创建逻辑时不小心影响了浏览器路径。
+
+具体的双轨代码模式：
+
+```javascript
+function saveFileToDevice(fileName, content, mimeType) {
+  // 扩展名保留（两端通用）
+  
+  // === APK 分支 ===
+  if (_isApp && plus.io) {
+    // 只写字符串，不碰 ArrayBuffer/Blob
+    // 三层路径降级
+    // 分享面板降级
+  }
+  
+  // === 浏览器分支 ===
+  // 不动！data URL → 二进制解码 → Blob → <a download>
+}
+```
+
+---
+
+<h2 id="ch69">69. 总结</h2>
+{: #ch69}
 
 
 
@@ -2096,13 +2228,19 @@ saveFileToDevice(name, content, isText ? 'text/plain' : 'application/octet-strea
 
 交互方案的选择优先级：**结构 > 事件 > 定时器。** 小组件跟随分页用结构解决（嵌进 page）比滚动监听可靠；扫雷标旗用显式按钮比长按定时器可靠；文件夹管理用点选式比拖拽进出可靠。
 
-APK 兼容性教训：**模拟器 ≠ 真机。** Canvas GPU 纹理限制、fetch 的 signal 参数类型、WebView 的 DownloadListener 缺失、H5+ 异步回调的 try/catch 陷阱——这些只在真机上才暴露。每次大改动后必须在真机上验证导出/导入/API 调用这些关键路径。
+APK 兼容性教训：**模拟器 ≠ 真机。** Canvas GPU 纹理限制、fetch 的 signal 参数类型、WebView 的 DownloadListener 缺失、H5+ `FileWriter` 只稳定支持字符串、`plus.share.sendWithSystem` 的 ROM 兼容性——这些只在真机上才暴露。
 
-代码考古学：**备份是最好的调试工具。** 遇到"以前能用现在不行"的问题，第一时间 diff 旧版本——五处关键修复里有三处是对比备份 11 找到的根因。
+代码考古学：**备份是最好的调试工具。** "以前能用现在不行"的问题，第一时间 diff 旧版本——`signal` 参数差异、`papiStream` 的多余封装，都是对比备份秒定位的。
+
+**浏览器和 APK 必须分开对待。** 这一轮最深的一个坑就是为了修 APK 导出而改了 `saveFileToDevice` 的 Blob 创建逻辑，影响了浏览器下载。之后的原则：浏览器分支不动，只改 APK 分支。
 
 ---
 
 *下一篇：文件系统的进一步优化——IndexedDB 直接存 Blob 而非 base64，以及让桌面短信变身真正的聊天 App。*
+
+---
+
+
 
 ---
 
