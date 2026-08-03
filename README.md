@@ -114,6 +114,8 @@ effective-pancake/
 │   ├── 2026-06-10-publish-blog-skill.md               (4.3) Publish Blog Skill
 │   ├── 2026-07-23-AI聊天应用开发全记录.md               (4.4) AI 聊天应用开发记录
 │   ├── 2026-07-27-hbuilder-local-debug.md           (4.5) HBuilder 本地调试实录
+│   ├── 2026-07-30-phone-desktop-dev-record.md        (4.6) 手机桌面模拟器开发全记录
+│   ├── 2026-08-03-pent-phone-appendix.md               (🌿) ├ 项目文件下载与说明
 │   ├── 2026-06-11-codex-qq-messenger-debug.md          (6.1) Codex 控制 QQ 发消息
 │   ├── 2026-06-10-ai-tea-room.md                     (5.1) AI 茶馆夜话
 │   └── 2026-06-12-跟AI学编程的第一天.md                 (7.1) 跟 AI 学编程
@@ -123,7 +125,10 @@ effective-pancake/
 │   └── 重置系统和iOS的区别.md
 │
 ├── assets/                  ← 附件 / 原始记录
-│   ├── phone.html                                     📥 脱敏通用版 AI 聊天应用（双击即用）
+│   ├── phone.html                                     📥 脱敏通用版 AI 聊天应用
+│   ├── p-ent-phone/                                   📥 手机桌面模拟器项目
+│   │   ├── p-ent-phone.html                           (~9956行，双击即用)
+│   │   └── README.md                                  项目说明
 │   ├── codex-cc-2026-06-10.txt                       (5.2) AI 茶馆夜话聊天记录
 │   ├── codex-qq-2026-06-11.txt                       (6.3) Codex QQ 发消息调试记录
 │   ├── ai-学编程-聊天记录-2026-06-12.txt              (7.2) Skills 学习聊天记录
