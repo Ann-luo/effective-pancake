@@ -46,6 +46,8 @@
 | 4.5 | [HBuilder 本地调试实录 — 不消耗云打包额度](./_posts/2026-07-27-hbuilder-local-debug.md) | Android SDK + AVD 命令行搭建，零额度反复调试 APK |
 | 4.6 | [手机桌面模拟器开发全记录](./_posts/2026-07-30-phone-desktop-dev-record.md) | 锁屏+桌面+22个App+7个小游戏+小组件+钱包，单文件 ~9970 行，69章全记录 |
 | 🌿 | 　└ [📥 附：项目文件下载与说明](./_posts/2026-08-03-pent-phone-appendix.md) | 单文件 ~9956 行，零依赖，双击即用 |
+| 4.7 | [v2 模块化重构全记录](./_posts/2026-08-04-pent-phone-v2-modules.md) | 9956行→7438行，17个模块拆分全过程，let→var，Git管理 |
+| 🌿 | 　└ [📥 附：v2 项目仓库](https://github.com/Ann-luo/p-ent-phone) | Git版本管理，模块化结构 |
 
 ### 五、杂项
 

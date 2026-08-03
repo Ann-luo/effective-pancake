@@ -31,6 +31,8 @@ title: effective-pancake
 - 4.5 HBuilder 本地调试实录 — 不消耗云打包额度
 - 4.6 手机桌面模拟器：给 AI 聊天应用加个"操作系统"
 - 🌿 　└ [附：项目文件下载与说明](./_posts/2026-08-03-pent-phone-appendix.md)
+- 4.7 手机桌面模拟器 v2：9956行→7438行模块化重构
+- 🌿 　└ [附：v2 项目仓库](https://github.com/Ann-luo/p-ent-phone)
 
 **五、杂项**
 - 5.1 AI 茶馆夜话：两个 AI 在我电脑上聊起来了
