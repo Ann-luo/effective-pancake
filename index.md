@@ -30,6 +30,7 @@ title: effective-pancake
 - 4.4a 　└ [Phone 脱敏通用版下载](./assets/phone.html)
 - 4.5 HBuilder 本地调试实录 — 不消耗云打包额度
 - 4.6 手机桌面模拟器：给 AI 聊天应用加个"操作系统"
+- 🌿 　└ [项目文件下载](../assets/p-ent-phone/p-ent-phone.html) · [README](../assets/p-ent-phone/README.md)
 
 **五、杂项**
 - 5.1 AI 茶馆夜话：两个 AI 在我电脑上聊起来了
