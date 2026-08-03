@@ -45,7 +45,7 @@
 | 　 | 　└ [Phone 脱敏通用版](./_posts/2026-07-28-phone-ai-chat-app.md) | 📥 [下载 phone.html](./assets/phone.html) · 去掉角色设定，开箱即用 |
 | 4.5 | [HBuilder 本地调试实录 — 不消耗云打包额度](./_posts/2026-07-27-hbuilder-local-debug.md) | Android SDK + AVD 命令行搭建，零额度反复调试 APK |
 | 4.6 | [手机桌面模拟器开发全记录](./_posts/2026-07-30-phone-desktop-dev-record.md) | 锁屏+桌面+22个App+7个小游戏+小组件+钱包，单文件 ~9970 行，69章全记录 |
-| 🌿 | 　└ [📥 项目文件下载](./assets/p-ent-phone/p-ent-phone.html) · [📖 README](./assets/p-ent-phone/README.md) | 单文件 ~9956 行，零依赖，双击即用 |
+| 🌿 | 　└ [📥 附：项目文件下载与说明](./_posts/2026-08-03-pent-phone-appendix.md) | 单文件 ~9956 行，零依赖，双击即用 |
 
 ### 五、杂项
 
