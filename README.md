@@ -118,6 +118,7 @@ effective-pancake/
 │   ├── 2026-07-27-hbuilder-local-debug.md           (4.5) HBuilder 本地调试实录
 │   ├── 2026-07-30-phone-desktop-dev-record.md        (4.6) 手机桌面模拟器开发全记录
 │   ├── 2026-08-03-pent-phone-appendix.md               (🌿) ├ 项目文件下载与说明
+│   ├── 2026-08-04-pent-phone-v2-modules.md            (4.7) v2 模块化重构全记录
 │   ├── 2026-06-11-codex-qq-messenger-debug.md          (6.1) Codex 控制 QQ 发消息
 │   ├── 2026-06-10-ai-tea-room.md                     (5.1) AI 茶馆夜话
 │   └── 2026-06-12-跟AI学编程的第一天.md                 (7.1) 跟 AI 学编程
