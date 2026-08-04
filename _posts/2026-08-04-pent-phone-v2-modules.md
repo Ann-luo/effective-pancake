@@ -243,7 +243,27 @@ CSS 拆到外部文件后，出现了一个诡异的问题：Phone 聊天界面�
 
 （写这篇文章时这个 bug 还在排查中）
 
-**更新**：删掉所有外链 `<script>` 标签后依然偏左——说明不是 JS 加载的问题。问题锁定在 CSS 和 HTML 结构的交互上。待续。
+**更新**：删掉所有外链 `<script>` 标签后依然偏左——说明不是 JS 加载的问题。问题锁定在 CSS 和 HTML 结构的交互上。
+
+**破案**：根因找到了。CSS 提取脚本把 HTML 里的 **三个** `<style>` 块都抽出来了。
+
+第一个（89141 字符）是主应用样式，有 `body{display:flex;justify-content:center}`——正确。
+
+但第二个（428 字符）和第三个（386 字符）**不是**主应用样式！它们在 JavaScript 代码块里面，是导出功能生成的 HTML 页面的内联样式。包含：
+
+```css
+/* 导出相册页面 */
+body{font-family:sans-serif;max-width:600px;margin:0 auto;...}
+
+/* 导出聊天记录页面 */
+body{flex:1;overflow-y:auto;padding:14px;line-height:1.5}
+```
+
+这些规则覆盖了主应用的 `body{display:flex;justify-content:center}`。因为三个 `<style>` 块在 HTML 里都有，CSS 级联规则让后面（817 字符的导出样式）覆盖前面（89141 字符的主应用样式）。
+
+在原始 v1 中这三个 `<style>` 都存在，但导出样式也覆盖了主样式——v1 靠 `max-width:600px;margin:0 auto` 来居中，看起来和 flexbox 居中的效果差不多所以没发现。
+
+修复：只提取第一个 `<style>` 块的 CSS，后面两个（在 `<script>` 字符串里的导出样式）不提取。
 
 ---
 
