@@ -283,17 +283,29 @@ body{flex:1;overflow-y:auto;padding:14px;line-height:1.5}
 ✅ js/note.js        便签        (2 函数)
 ✅ js/apps/media.js  相机/相册/文件 (11 函数)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ js/apps/music.js   音乐 (14 函数)
+✅ js/apps/memo.js    备忘录 (3 函数)
+✅ js/apps/calendar.js 日历 (2 函数)
+✅ js/apps/clock.js   时钟 (2 函数, 闹钟内联)
+✅ js/apps/calc.js    计算器 (2 函数)
+✅ js/apps/dialer.js  拨号 (3 函数)
+✅ js/apps/settings.js 设置 (1 函数)
+✅ js/apps/store.js   商店 (1 函数)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ❌ js/api.js         API层 (放弃了, let 耦合太深)
-❌ js/apps/*         其他App (互相依赖太多)
+❌ Phone/SMS/查手机   核心聊天 (互相依赖太多, 不值得拆)
 ```
 
-### 数字
+**更新**：居中 bug 破案后，继续拆了剩余 App——音乐、备忘录、日历、时钟、拨号、设置、商店。时钟因为 `palarmPopup` 和 `delAl` 跟计算器共享代码行，单独拆时黑屏，最终保留两个小函数内联解决。
+
+### 最终数字
 
 ```
-9956 行 → 7438 行 (瘦了 25%)
-1 个文件 → 17 个文件
+9956 行 → 7446 行 (瘦了 25%)
+1 个文件 → 24 个文件
 89 处 let→var
 0 个备份文件 → Git 版本管理
+18 次 Git commit
 ```
 
 ### 学到的
@@ -319,9 +331,19 @@ p-ent-phonev2/
 │   ├── weather.js          ← 天气
 │   ├── wallet.js           ← 钱包
 │   ├── note.js             ← 便签
-│   ├── api.js              ← (预留, 暂不拆)
 │   ├── apps/
-│   │   └── media.js        ← 相机/相册/文件
+│   │   ├── weather.js      ← 天气
+│   │   ├── wallet.js       ← 钱包
+│   │   ├── note.js         ← 便签
+│   │   ├── media.js        ← 相机/相册/文件
+│   │   ├── music.js        ← 音乐
+│   │   ├── memo.js         ← 备忘录
+│   │   ├── calendar.js     ← 日历
+│   │   ├── clock.js        ← 时钟
+│   │   ├── calc.js         ← 计算器
+│   │   ├── dialer.js       ← 拨号
+│   │   ├── settings.js     ← 设置
+│   │   └── store.js        ← 商店
 │   └── games/              ← 7个游戏
 │       ├── 2048.js
 │       ├── gomoku.js
