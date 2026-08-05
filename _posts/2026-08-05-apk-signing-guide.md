@@ -42,9 +42,9 @@ tags: [p-ent-phone, APK, 签名, 证书, HBuilder, 打包, 科普]
 
 | 词 | 原词 | 大白话 | 长什么样 |
 |------|------|------|------|
-| 密钥库 | keystore | 一个保险箱文件 | `p-ent-phone.keystore`（约 3KB） |
-| 别名 | alias | 保险箱里一把钥匙的名字 | `pent`（自己起的） |
-| 密码 | password | 开保险箱的密码 | `pent123`（自己设的，≥6 位） |
+| 密钥库 | keystore | 一个保险箱文件 | `your-app.keystore`（约 3KB） |
+| 别名 | alias | 保险箱里一把钥匙的名字 | `myapp`（自己起的） |
+| 密码 | password | 开保险箱的密码 | `your_password`（自己设的，≥6 位） |
 
 一个 keystore 能存多把钥匙（多个别名），就像保险箱里能放好几把钥匙。但你自己用，一把就够了。
 
@@ -104,7 +104,7 @@ HBuilder 打包
 
 | 词 | 解释 |
 |------|------|
-| **包名** | App 的身份证号，格式像 `com.annluo.p_ent_phone`。同一包名 + 同一签名才能覆盖安装 |
+| **包名** | App 的身份证号，格式像 `com.example.myapp`。同一包名 + 同一签名才能覆盖安装 |
 | **测试证书** | HBuilder 默认用的公共证书，每个人打出来的签名都不一样，互相不认 |
 | **自有证书** | 你自己用 keytool 生成的，一辈子不变 |
 | **覆盖安装** | 不卸载旧版直接装新版，数据保留 |
@@ -125,7 +125,7 @@ HBuilder 打包
 |------|------|
 | **DCloud 开发者中心** | HBuilder 的官网后台，管理你的 App 信息 |
 | **SHA1/SHA256 指纹** | 你的证书的唯一标识。填到开发者中心，云打包时才不会弹警告 |
-| **AppID** | HBuilder 给你每个项目分配的唯一 ID，比如 `H54D2D6A2` |
+| **AppID** | HBuilder 给你每个项目分配的唯一 ID，比如 `H12345678` |
 | **离线打包 Key** | 免费 20 个名额，每次改包名或 SHA1 占一个，同配置不重复占用 |
 
 ---
@@ -137,7 +137,7 @@ HBuilder 打包
 确保电脑有 JDK（HBuilder 自带），打开 cmd，运行：
 
 ```
-"D:\Program Files\Android\jdk\jdk-21.0.4+7\bin\keytool.exe" -genkey -v -keystore "你的路径\p-ent-phone.keystore" -alias pent -keyalg RSA -keysize 2048 -validity 36500 -storepass 你的密码 -keypass 你的密码 -dname "CN=你的名字, O=Personal, C=zh"
+keytool -genkey -v -keystore "your-app.keystore" -alias myapp -keyalg RSA -keysize 2048 -validity 36500
 ```
 
 这行干了什么：
@@ -158,8 +158,8 @@ HBuilder 打包
 
 ```json
 "google": {
-    "packagename": "com.annluo.p_ent_phone",
-    "keystore": "p-ent-phone.keystore",
+    "packagename": "com.example.myapp",
+    "keystore": "your-app.keystore",
     "password": "你的密码",
     "aliasname": "pent"
 }
