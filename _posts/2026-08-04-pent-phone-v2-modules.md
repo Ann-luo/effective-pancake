@@ -359,4 +359,129 @@ p-ent-phonev2/
 
 ---
 
-*下一篇：居中消失之谜的真相。以及，如果继续拆，音乐、备忘录、日历这些 App 能不能平安落地。*
+*居中 bug 破案，App 拆分也全部完成。接下来是 v2.1——多模型支持、Dock 自定义、模型管理页面。*
+
+---
+
+<h2 id="ch12">12. v2.1：多模型支持</h2>
+
+### 需求
+
+DeepSeek 好用，但用户想切到通义千问、GPT、Claude——不同的模型有不同的性格和价格。核心需求：
+
+- 12 个供应商一键切换（国内 8 个 + 国际 4 个）
+- 每供应商独立 API Key、base URL、模型列表
+- Claude 用 Messages API（x-api-key），其余 11 家用 OpenAI 兼容格式（Bearer token）
+- 支持手动拉取模型列表（OpenAI/Kimi/Mistral 有 `/models` 端点）
+- 旧 `apiKey`/`modelName` 自动迁移，向后兼容
+
+### 实现
+
+新建 `js/provider.js`——12 家供应商注册表 + 统一 `pchatCompletion()` 入口。
+
+**供应商清单（2026 年 8 月最新模型）**：
+
+| # | 供应商 | 最新模型 |
+|---|--------|------|
+| 1 | DeepSeek | deepseek-v4-flash, deepseek-v4-pro |
+| 2 | 通义千问 | qwen3.7-max, qwen3.7-plus, qwen3.7-flash |
+| 3 | 百度文心 | ernie-4.5-turbo-128k, ernie-5.0 |
+| 4 | 字节豆包 | doubao-pro-32k, doubao-lite-32k |
+| 5 | Kimi | moonshot-v1-8k/32k/128k |
+| 6 | 智谱 GLM | glm-4-flash, glm-4-plus, glm-4-long |
+| 7 | 讯飞星火 | spark-lite, spark-pro, spark-max |
+| 8 | MiniMax | MiniMax-M3, MiniMax-M2.5 |
+| 9 | GPT | gpt-5, gpt-5-nano, gpt-4.1 |
+| 10 | Claude | claude-sonnet-5, claude-opus-5, claude-haiku-4-5 |
+| 11 | Gemini | gemini-2.5-flash, gemini-2.5-pro |
+| 12 | Mistral | mistral-medium-3.5, mistral-small-4 |
+
+**Claude 特殊处理**：唯一的非 OpenAI 兼容供应商。`/v1/messages` 端点 + `x-api-key` 头 + system 提示词放到顶层 + SSE 事件是 `content_block_delta` 而不是 `choices[0].delta.content`。在 `pchatCompletion` 里做了格式转换。
+
+**自动迁移**：`pinit()` 启动时检测——如果 IndexedDB 里没有 `providerConfigs`，把旧 `apiKey`/`modelName` 迁移为 DeepSeek 条目，其他 11 个供应商预设空 Key + 内置模型。
+
+**7 个 API 调用点全部重构**：
+
+```javascript
+// 之前：硬编码 DeepSeek
+fetch('https://api.deepseek.com/v1/chat/completions', {
+  headers: { 'Authorization': 'Bearer ' + apiKey }
+})
+
+// 之后：动态供应商
+pgetActive().baseUrl + '/chat/completions'
+headers: { 'Authorization': 'Bearer ' + pgetActive().apiKey }
+```
+
+0 个 `api.deepseek.com` 残留——全部 API 调用走 `pgetActive()` 动态路由。
+
+---
+
+<h2 id="ch13">13. 模型管理页面</h2>
+
+新建 `js/apps/model-manager.js`，从设置页进入。
+
+功能：
+- 📋 **供应商列表**：12 家，每个显示名称 + ✅（已配 Key）/ ❌（未配），点击切换
+- 🔑 **API Key**：密码输入框，切换供应商自动切换对应 Key
+- 📦 **模型选择**：内置模型 + 自定义模型下拉框
+- ➕ **手动添加模型**：输入框 + 添加按钮
+- 🔄 **自动拉取模型**：Kimi/GPT/Mistral 支持，调 `/models` 端点，实时获取
+- 🔌 **测试连接**：发一个探针请求，返回 ✅ 或 ❌
+- 💾 **保存**：全量存到 IndexedDB `global_settings`
+
+Phone 设置弹窗简化了——去掉了 API Key 和模型选择器，只剩 Temperature/TopP 滑块 + "管理 AI 模型与 API Key →"链接。所有模型配置统一在模型管理页面。
+
+---
+
+<h2 id="ch14">14. Dock 自定义</h2>
+
+新建 `js/dock.js`——Dock 图标不再是硬编码的四个。
+
+- 默认：Phone / 短信 / 相册 / 设置
+- 长按（500ms）→ 弹出替换面板，选其他 App 替换
+- 桌面端：鼠标长按；手机端：触摸长按（10px 容忍度防误触）
+- 配置存 `localStorage pent_dock`，可持久化
+
+**踩坑：引号转义地狱**
+
+Dock 长按搞了五轮才稳定——
+
+1. **内联 handler 引号炸了**：`ontouchstart="pdockLongPress(event,\''+da.id+'\')"`——在单引号 JS 字符串里嵌套转义单引号，`\\'` 到底是反斜杠加引号还是转义的引号？试了四种组合才蒙对
+2. **事件委托 vs 内联**：内联 handler 每次渲染要重新计算引号转义，极易出错。改为在 `prenderDT` 后给 Dock 容器绑事件委托，用 `closest('.papp')` 找目标图标
+3. **点击误触**：mousedown 设 500ms 计时器，mouseup 清除——但写成了 Dock 容器级，鼠标移出 Dock 再松手清不掉。改为 document 级 mouseup/touchend 无条件清除计时器
+
+**重置按钮**：设置页 → "📌 重置 Dock 栏" → 恢复默认四个图标。
+
+---
+
+<h2 id="ch15">15. Phone 设置简化</h2>
+
+冲突演进——最初 Phone 设置弹窗里有 API Key 输入和模型选择器，和模型管理页面功能重复。
+
+用户要求：Phone 只保留 Temperature/TopP，模型和 Key 统一在设置 → AI 模型管理里改。
+
+删字段时多删了一个 `</div>`——Phone 设置弹窗出现裸 `/div>` 乱码。原因是去掉 modelSelect 和 apiKeyInput 的 `<div class="field">` 时，闭标签被一起删了但另一个没对齐。
+
+---
+
+<h2 id="ch16">16. v2.1 总结</h2>
+
+```
+新增文件：
+  js/provider.js         ← 12供应商注册表 + pchatCompletion
+  js/dock.js             ← Dock自定义（长按替换）
+  js/apps/model-manager.js ← 模型管理页面
+
+修改文件：
+  index.html             ← 7个API调用点重构 + 设置弹窗简化
+  js/apps/settings.js    ← AI 模型管理入口
+
+30+ commits，从模块化到多模型到交互打磨
+```
+
+最大的感受：**引号转义是单文件 JS 开发的头号敌人。** 五轮 Dock 修复、三次回退、N 次黑屏——根因全是 `'` `"` `\` 的排列组合。其次是**别在了一个地方改两个相关的 UI**——Phone 设置简化 + 跳转链接 + HTML 结构，一改就漏标签。
+
+---
+
+*下一篇：v2 稳定后，要不要开 v3——Service Worker 离线缓存 + 推送通知。*
