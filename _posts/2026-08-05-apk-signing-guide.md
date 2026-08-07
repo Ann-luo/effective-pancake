@@ -161,7 +161,7 @@ keytool -genkey -v -keystore "your-app.keystore" -alias myapp -keyalg RSA -keysi
     "packagename": "com.example.myapp",
     "keystore": "your-app.keystore",
     "password": "你的密码",
-    "aliasname": "pent"
+    "aliasname": "myapp"
 }
 ```
 
