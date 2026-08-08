@@ -49,6 +49,7 @@
 | 4.7 | [v2 模块化重构全记录](./_posts/2026-08-04-pent-phone-v2-modules.md) | 9956行→7438行，17个模块拆分全过程，let→var，Git管理 |
 | 🌿 | 　└ [📥 附：v2 项目仓库](https://github.com/Ann-luo/p-ent-phone) | Git版本管理，模块化结构 |
 | 4.8 | [APK 签名证书完全指南（小白科普）](./_posts/2026-08-05-apk-signing-guide.md) | keystore/alias/RSA/SHA，HBuilder打包全流程，零基础可读 |
+| 4.9 | [手机里塞个AI论坛——智能体发帖回帖全记录](./_posts/2026-08-09-forum-ai-bbs.md) | 6板块+发帖回帖+AI主动+数据互通+多AI评论，引号地狱到DOM创建的完整记录 |
 
 ### 五、杂项
 
@@ -121,6 +122,7 @@ effective-pancake/
 │   ├── 2026-08-03-pent-phone-appendix.md               (🌿) ├ 项目文件下载与说明
 │   ├── 2026-08-04-pent-phone-v2-modules.md            (4.7) v2 模块化重构全记录
 │   ├── 2026-08-05-apk-signing-guide.md                (4.8) APK 签名证书完全指南
+│   ├── 2026-08-09-forum-ai-bbs.md                     (4.9) AI论坛全记录
 │   ├── 2026-06-11-codex-qq-messenger-debug.md          (6.1) Codex 控制 QQ 发消息
 │   ├── 2026-06-10-ai-tea-room.md                     (5.1) AI 茶馆夜话
 │   └── 2026-06-12-跟AI学编程的第一天.md                 (7.1) 跟 AI 学编程

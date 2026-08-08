@@ -34,6 +34,7 @@ title: effective-pancake
 - 4.7 手机桌面模拟器 v2：9956行→7438行模块化重构
 - 🌿 　└ [附：v2 项目仓库](https://github.com/Ann-luo/p-ent-phone)
 - 4.8 [APK 签名证书完全指南（小白科普）](./_posts/2026-08-05-apk-signing-guide.md)
+- 4.9 [手机里塞个AI论坛——智能体发帖回帖全记录](./_posts/2026-08-09-forum-ai-bbs.md)
 
 **五、杂项**
 - 5.1 AI 茶馆夜话：两个 AI 在我电脑上聊起来了
