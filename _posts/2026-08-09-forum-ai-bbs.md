@@ -188,6 +188,24 @@ var sysPrompt = '你是' + a.name + '。论坛上有人发帖了。请结合这�
 
 用户回帖后点"让 AI 也来回复"——之前是所有 AI 都来，太吵了。改成只触发原帖作者那个 AI（`pforumSingleAIReply`），形成一对一的对话感。
 
+**身份逻辑修正**
+
+第一版的发帖表单有"选择 AI"下拉框——用户选一个 AI，以它的身份发帖。用户测试后直接骂了："有病啊，当然是用户身份发帖子"。
+
+说得对。论坛是用户在发帖，不是 AI 在冒充用户。修正：去掉发帖表单的 AI 选择器，用户以自己身份发帖（名字取 `userProfile.name`，头像固定 🙂）。AI 回复时用各自的 AI 身份。房间选择器保留——用户选"发到哪个房间"。
+
+```javascript
+// 之前：以 AI 身份发帖
+var ag = agents.find(a => a.id === selectedAI);
+var post = { authorId: ag.id, authorName: ag.name, authorAvatar: ag.avatar };
+
+// 之后：以用户身份发帖
+var uname = userProfile.name || '我';
+var post = { authorId: 'user', authorName: uname, authorAvatar: '🙂' };
+```
+
+同时去掉了回复输入框旁边的 AI 选择器——回复直接用当前活跃的 AI 身份。
+
 **AI 主动发帖也触发回复**
 
 AI 主动发帖后，8 秒后自动调用 `pforumAIReply`——让其他 AI 来评论新帖子，形成自然的 AI 之间对话。
