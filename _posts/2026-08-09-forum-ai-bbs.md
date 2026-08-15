@@ -24,7 +24,10 @@ tags: [p-ent-phone, 论坛, AI, 多智能体, 数据互通]
 10. [发帖按钮没反应——两个低级 bug](#ch10)
 11. [AI 回复失败的根因——let 块作用域](#ch11)
 12. [房间标注](#ch12)
-13. [总结](#ch13)
+13. [微信式回复：点谁回谁](#ch13)
+14. [头像统一](#ch14)
+15. [短信 AI 回复的连环 bug](#ch15)
+16. [总结](#ch16)
 
 ---
 
@@ -327,7 +330,93 @@ function pforumRoomName(aid) {
 
 ---
 
-<h2 id="ch13">13. 总结</h2>
+<h2 id="ch13">13. 微信式回复：点谁回谁</h2>
+
+做完基础回复后，用户提出要"微信朋友圈那种"的交互——不是点按钮触发 AI，而是**点某条回复，直接回复给那个人，那人再回你**。
+
+交互流程：
+
+1. 帖子下面有回复列表
+2. 点某条 **AI 的回复** → 输入框聚焦，placeholder 变"回复 @布雷斯[日常]"
+3. 输入内容 → 以"回复 @布雷斯[日常]"形式发出
+4. 那个 AI 看到 → 继续回复你
+5. 点**自己的回复** → 不响应
+
+核心是一个全局回复目标变量：
+
+```javascript
+var _pfReplyTo = null, _pfReplyToName = null;
+
+// 点 AI 回复 → 设置回复目标
+row.onclick = function() {
+  _pfReplyTo = r.authorId;
+  _pfReplyToName = r.authorName + (r.roomName ? ' [' + r.roomName + ']' : '');
+  inp.placeholder = '回复 @' + _pfReplyToName;
+  inp.focus();
+};
+```
+
+回复保存时带上 `replyTo` 字段，显示"回复 @XXX"，然后触发那个 AI 继续回复。理论上可以**无限轮对话**——每点一次就多一轮。
+
+还有个细节：点击 AI 回复后，输入框左侧的 ✕ 按钮要显示（取消回复目标）。一开始这个 ✕ 按钮有 bug——渲染时 `display:none`，点击 AI 回复后没更新，所以一直看不到。修法是点击时手动 `document.getElementById('pforumCancelBtn').style.display='flex'`。
+
+---
+
+<h2 id="ch14">14. 头像统一</h2>
+
+用户发现：论坛里用户头像一直显示默认笑脸 🙂，但 Phone 里换的用户头像没同步过来。
+
+根因：论坛发帖/回帖时，用户头像硬编码了 `'🙂'`，没读 `userProfile.avatar`。
+
+```javascript
+// 之前：硬编码
+authorAvatar: '🙂'
+// 之后：读 Phone 里设置的头像
+authorAvatar: (typeof userProfile !== 'undefined' && userProfile.avatar) ? userProfile.avatar : '🙂'
+```
+
+AI 头像论坛和短信都读的 `agents[].avatar`（Phone 里设置的 AI 头像），这块本来就对。短信的用户头像也已经用 `userProfile.avatar`（7 处），不用改。
+
+统一后，Phone 里换任何头像，论坛和短信都跟着显示。
+
+---
+
+<h2 id="ch15">15. 短信 AI 回复的连环 bug</h2>
+
+论坛折腾完，短信在 APK 里又出了问题——AI 回复不显示。排查下来是一串连环 bug：
+
+### Bug 1：模型名不一致（论坛 fullT=0 的根因）
+
+Phone 的 `callDeepSeek` 用 `modelName`，论坛/短信的 `callDeepSeekForSMS` 用 `activeModelId`。两个变量值不一样——`modelName` 是有效模型，`activeModelId` 是退役的 `deepseek-chat`。API 请求成功但返回空（`fullT=0`）。
+
+修法：`callDeepSeekForSMS` 统一用 `modelName`，并在 `psyncGlobals` 里加 `modelName = activeModelId` 保持同步。
+
+### Bug 2：退出短信界面后 AI 回复不显示
+
+用户在短信界面发消息后，立即退出。退出时 `prMessages` 把 `_psmsAgentId`/`_psmsRoomId` 设成 null。AI 回复异步完成后，`psmsSaveMsgs(_psmsAgentId, _psmsRoomId, msgs)` 用了已经变 null 的全局变量，把消息存到了错误的 key `pent_sms_msgs_null_null`。
+
+修法：`psmsSendMsg` 开头把 `aid`/`rid` 锁定到局部变量：
+
+```javascript
+var aid = _psmsAgentId, rid = _psmsRoomId;  // 锁定，不受退出影响
+var msgs = await psmsGetMsgs(aid, rid);
+...
+await psmsSaveMsgs(aid, rid, msgs);
+```
+
+### Bug 3：一次险些致命的失误
+
+第一次修锁 aid/rid 时，用脚本"重写整个函数"——结果 `start` 和 `end` 定位把 `psmsSendMsg` 之后、`psmsLoadMore` 之前的**整个统一 API 层（papiFetch/papiStream/papiRetry/callDeepSeekForSMS）全删了**。短信直接不回复了。
+
+回退后重做，这次只替换函数体内部的字符串，不删任何函数。教训：**用脚本重写函数时，定位边界必须精确到函数本身，不能把中间的其他代码卷进去。**
+
+### APK 流式的小插曲
+
+还试过把 `callDeepSeekForSMS` 改成纯非流式解决 APK 的 `ReadableStream` 问题，但用户坚持要原本的流式，最后回退了。最终保留流式 + 非流式降级的版本。
+
+---
+
+<h2 id="ch16">16. 总结</h2>
 
 论坛从零到完整，中间翻的车比想象中多得多：
 
@@ -337,14 +426,17 @@ function pforumRoomName(aid) {
 4. **删变量留引用**：删 AI 选择器漏了 `sel`，函数丢 `async`
 5. **let 块作用域**：外部模块访问不到 `let` 变量，95 处改 `var`
 6. **房间标注**：跨房间回复必须标注来源
+7. **模型名不一致**：`modelName` vs `activeModelId`，一个有效一个退役
+8. **退出后保存 key 错误**：全局变量被清空，局部变量锁定
+9. **脚本重写误删函数**：定位边界不精确，差点删了整个 API 层
 
 最终功能清单：
 - ✅ 6 个预设板块（闲聊/AI吐槽/数码/游戏/美食/日记）
 - ✅ 发帖：用户身份 + 图片 + 房间标注
-- ✅ 回帖：用户身份，多轮回复
+- ✅ 微信式回复：点谁回谁，无限轮对话
 - ✅ AI 主动发帖（心跳驱动，每智能体独立开关 + 房间标注）
 - ✅ AI 回复数据互通（聊天/短信/朋友圈/日记/记忆）
-- ✅ 多 AI 同时评论 + 房间标注
+- ✅ 多 AI 同时评论 + 房间标注 + 头像统一
 - ✅ 删帖、删回复
 
-新增文件 `js/apps/forum.js`。论坛是 v2.3 最复杂的功能，最深的坑是 **let 块作用域**——它影响的不仅是论坛，还有反查手机、以及未来所有拆出去的外部模块。这次 95 处 let→var 修的是整个项目的架构地基。
+新增文件 `js/apps/forum.js`。论坛是 v2.3 最复杂的功能，最深的坑是 **let 块作用域**——它影响的不仅是论坛，还有反查手机、以及未来所有拆出去的外部模块。而短信的连环 bug 提醒我：**在几千行的单文件里做增量，脚本定位边界必须精确，一次误删就是整个功能的崩溃。**
