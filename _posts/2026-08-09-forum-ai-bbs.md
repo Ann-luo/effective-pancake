@@ -27,7 +27,8 @@ tags: [p-ent-phone, 论坛, AI, 多智能体, 数据互通]
 13. [微信式回复：点谁回谁](#ch13)
 14. [头像统一](#ch14)
 15. [短信 AI 回复的连环 bug](#ch15)
-16. [总结](#ch16)
+16. [AI 头像的漏网之鱼——图片存 A 字段，读的却是 B 字段](#ch16)
+17. [总结](#ch17)
 
 ---
 
@@ -416,7 +417,49 @@ await psmsSaveMsgs(aid, rid, msgs);
 
 ---
 
-<h2 id="ch16">16. 总结</h2>
+<h2 id="ch16">16. AI 头像的漏网之鱼——图片存 A 字段，读的却是 B 字段</h2>
+
+第 14 章做完「头像统一」后，用户又反馈：论坛的**用户头像**对了，但 **AI 的头像还是没显示**，短信里也一样——全是默认 🤖 emoji，不是 Phone 里换的图片。另外帖子详情页顶部「我」的头像也没显示。
+
+排查发现，AI 头像和用户头像是两套不同的存储，而且 **AI 头像自己还分成了两个字段**：
+
+```javascript
+// 都叫 avatar，但存的东西不一样
+userProfile.avatar   // 用户头像：图片 data URL（或空）
+bresProfile.avatar   // AI 头像：图片 data URL（或空）——存 IndexedDB 的 agent_<id>_bres_profile
+agents[].avatar      // AI 头像：emoji 文本（🤖 / 🐍 / 🐱）——存 pent_agents_list
+```
+
+Phone 里「换头像」时，图片走 `compressAndSaveAvatar` 存进 `bresProfile.avatar`（当前智能体的 profile）。但论坛和短信渲染头像时读的却是 `agents[].avatar`——里面只有 emoji，永远拿不到图片。
+
+**为什么第 14 章漏了？** 那一章只修了用户头像（`userProfile.avatar`），顺手断言「AI 头像本来就对」。其实 AI 头像的图片根本没被读到，只是默认 emoji 和期望的 emoji 长得一样，肉眼看不出来。
+
+**修法：加一个统一取头像的函数，渲染时实时取图、emoji 兜底。**
+
+```javascript
+// 统一头像：用户取 userProfile，AI 优先取图片头像(bresProfile)，否则 emoji
+function pagentAvatar(id) {
+  if (id === 'user') return userProfile.avatar || '🙂';
+  var a = (agents || []).find(function(x) { return x.id === id; });
+  if (a) {
+    if (id === activeAgentId && bresProfile && bresProfile.avatar) return bresProfile.avatar;
+    return a.avatar || '🤖';
+  }
+  return '🤖';
+}
+```
+
+论坛 3 处渲染（帖子列表、详情页头部、回复行）+ 3 处创建（AI 回复、单条 AI 回复、主动发帖）、短信 4 处显示，全部改成 `pavatarHTML(pagentAvatar(ag.id), '🤖', 24)` 这类调用。
+
+**为什么不直接把图片写进 `agents[].avatar`？** 因为 `agents[].avatar` 在很多地方被当纯文本渲染——智能体选择器 `'<span>' + a.avatar + '</span>'`、智能体编辑器的输入框。一旦塞进 base64 图片，这些地方会显示一大坨乱码。所以保留 emoji 字段不动，只在「显示头像的地方」实时算「该显示图片还是 emoji」。
+
+**好处**：因为是在渲染时实时取，所以**旧帖子、旧回复也自动修正**——不用重新发帖，之前存进去的 emoji 会被实时覆盖成图片。
+
+这一课和第 14 章其实是同一件事的两半：**头像有「存储字段」和「显示字段」两个概念，一旦分叉（图片存这、显示读那），就得靠一个统一函数在渲染时收敛，而不是到处硬编码。**
+
+---
+
+<h2 id="ch17">17. 总结</h2>
 
 论坛从零到完整，中间翻的车比想象中多得多：
 
@@ -429,6 +472,7 @@ await psmsSaveMsgs(aid, rid, msgs);
 7. **模型名不一致**：`modelName` vs `activeModelId`，一个有效一个退役
 8. **退出后保存 key 错误**：全局变量被清空，局部变量锁定
 9. **脚本重写误删函数**：定位边界不精确，差点删了整个 API 层
+10. **头像双字段分叉**：图片存 `bresProfile.avatar`、显示读 `agents[].avatar`，用一个统一函数在渲染时收敛
 
 最终功能清单：
 - ✅ 6 个预设板块（闲聊/AI吐槽/数码/游戏/美食/日记）
@@ -436,7 +480,7 @@ await psmsSaveMsgs(aid, rid, msgs);
 - ✅ 微信式回复：点谁回谁，无限轮对话
 - ✅ AI 主动发帖（心跳驱动，每智能体独立开关 + 房间标注）
 - ✅ AI 回复数据互通（聊天/短信/朋友圈/日记/记忆）
-- ✅ 多 AI 同时评论 + 房间标注 + 头像统一
+- ✅ 多 AI 同时评论 + 房间标注 + 头像统一（用户 + AI 图片头像实时显示）
 - ✅ 删帖、删回复
 
 新增文件 `js/apps/forum.js`。论坛是 v2.3 最复杂的功能，最深的坑是 **let 块作用域**——它影响的不仅是论坛，还有反查手机、以及未来所有拆出去的外部模块。而短信的连环 bug 提醒我：**在几千行的单文件里做增量，脚本定位边界必须精确，一次误删就是整个功能的崩溃。**
