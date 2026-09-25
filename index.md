@@ -44,6 +44,7 @@ title: effective-pancake
 - 6.1 Codex 控制 QQ 发消息——一晚上的调试记录
 - 6.2 Skill 资源包：qq-messenger
 - 6.3 [原始聊天记录](/effective-pancake/assets/codex-qq-2026-06-11.txt)
+- 6.4 [Codex 突然变英文？图片输入与中文补丁排查](./_posts/2026-09-25-Codex突然变英文与图片输入排查.md)
 
 **七、日志**
 - 7.1 跟 AI 学编程的第一天：Skills、服务器、前后端

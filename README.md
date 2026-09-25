@@ -65,6 +65,7 @@
 | 6.1 | [Codex 控制 QQ 发消息调试记](./_posts/2026-06-11-codex-qq-messenger-debug.md) | 十一关调试实录：权限、ESM、缓存、Enter vs Return、窗口状态…… |
 | 6.2 | 　📦 [Skill 资源包：qq-messenger](./skills/qq-messenger/SKILL.md) | 放入 Codex 的 skills 目录，通过 Codex Computer Use 控制 QQ 发消息 |
 | 6.3 | 　└ [原始聊天记录](./assets/codex-qq-2026-06-11.txt) | 完整调试对话过程，从权限报错到消息发送成功 |
+| 6.4 | [Codex 突然变英文？图片输入与中文补丁排查](./_posts/2026-09-25-Codex突然变英文与图片输入排查.md) | CC Switch 模型能力表把图片拦在中间层 + Codex++ 改错运行时接口导致中文失效，附排查顺序 |
 
 ### 七、日志
 
@@ -124,6 +125,7 @@ effective-pancake/
 │   ├── 2026-08-05-apk-signing-guide.md                (4.8) APK 签名证书完全指南
 │   ├── 2026-08-09-forum-ai-bbs.md                     (4.9) AI论坛全记录
 │   ├── 2026-06-11-codex-qq-messenger-debug.md          (6.1) Codex 控制 QQ 发消息
+│   ├── 2026-09-25-Codex突然变英文与图片输入排查.md       (6.4) Codex 图片输入与中文补丁排查
 │   ├── 2026-06-10-ai-tea-room.md                     (5.1) AI 茶馆夜话
 │   └── 2026-06-12-跟AI学编程的第一天.md                 (7.1) 跟 AI 学编程
 │
@@ -178,4 +180,5 @@ effective-pancake/
 
 ---
 
-*最后更新：2026 年 7 月 25 日*
+*最后更新：2026 年 9 月 25 日*
+
