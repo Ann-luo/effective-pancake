@@ -33,6 +33,7 @@
 | # | 文章 | 说明 |
 |---|------|------|
 | 3.1 | [GitHub 仓库变身博客完全指南](./_posts/2026-06-10-github-repo-to-blog-guide.md) | 免费把 GitHub 仓库变成博客网站，小白友好 |
+| 3.2 | [博客上链接点不开，GitHub 上却是好的？](./_posts/2026-09-26-Jekyll博客链接与分类踩坑.md) | Jekyll 与 GitHub 两套渲染规则的差异 + categories 静默改网址 |
 
 ### 四、Claude Code & AI 工具
 
@@ -115,6 +116,7 @@ effective-pancake/
 │   ├── 2026-06-08-windows-symlink-guide.md           (2.1) Windows 符号链接
 │   ├── 2026-06-08-windows-symlink-chatlog.md         (2.2) ├ 探索聊天记录
 │   ├── 2026-06-10-github-repo-to-blog-guide.md       (3.1) GitHub 仓库变身博客
+│   ├── 2026-09-26-Jekyll博客链接与分类踩坑.md          (3.2) 博客链接与分类踩坑
 │   ├── 2026-06-10-codex-cdp-skill.md                 (4.1) Codex CDP Skill
 │   ├── 2026-06-10-publish-blog-skill.md               (4.3) Publish Blog Skill
 │   ├── 2026-07-23-AI聊天应用开发全记录.md               (4.4) AI 聊天应用开发记录

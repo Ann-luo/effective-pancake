@@ -136,13 +136,15 @@ problems=[]
 # 正文也要查——文章里引用别的文章、引用附件，同样会用 post_url 和站内链接
 for f in ['index.md']+sorted(glob.glob('_posts/*.md')):
     t=io.open(f,encoding='utf-8').read()
-    for r in re.findall(r'\{%\s*post_url\s+(\S+?)\s*%\}',t):
+    # 链接检查跳过代码块：文章里常拿"错误写法"当例子，那不是真链接
+    scan=re.sub(r'`{3}.*?`{3}','',t,flags=re.S)
+    for r in re.findall(r'\{%\s*post_url\s+(\S+?)\s*%\}',scan):
         if r not in posts: problems.append('%s: post_url 对不上 -> %s'%(f,r))
-    for m in re.findall(r'\]\((/effective-pancake/\d{4}/\d{2}/\d{2}/[^)]*)\)',t):
+    for m in re.findall(r'\]\((/effective-pancake/\d{4}/\d{2}/\d{2}/[^)]*)\)',scan):
         problems.append('%s: 硬编码文章网址，应改用 post_url -> %s'%(f,m))
-    for m in re.findall(r'\]\((\.\.?/[^)]*)\)',t):
+    for m in re.findall(r'\]\((\.\.?/[^)]*)\)',scan):
         problems.append('%s: 相对链接，博客上会 404 -> %s'%(f,m))
-    for m in re.findall(r'\]\(/effective-pancake/((?:assets|skills)/[^)]*)\)',t):
+    for m in re.findall(r'\]\(/effective-pancake/((?:assets|skills)/[^)]*)\)',scan):
         if not os.path.exists(m): problems.append('%s: 资源不存在 -> %s'%(f,m))
     if not f.startswith('_posts'):
         continue          # index.md 是首页，没有 categories/title 那一套

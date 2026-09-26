@@ -21,6 +21,7 @@ title: effective-pancake
 
 **三、GitHub & 博客搭建**
 - 3.1 [GitHub 仓库变身博客完全指南]({% post_url 2026-06-10-github-repo-to-blog-guide %})
+- 3.2 [博客上链接点不开，GitHub 上却是好的？]({% post_url 2026-09-26-Jekyll博客链接与分类踩坑 %})
 
 **四、Claude Code & AI 工具**
 - 4.1 [Codex CDP Skill：跨模型通信踩坑与修复]({% post_url 2026-06-10-codex-cdp-skill %})
