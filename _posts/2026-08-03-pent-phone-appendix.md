@@ -6,7 +6,7 @@ categories: ["Claude Code & AI 工具"]
 tags: [p-ent-phone, 手机桌面, 单文件, 开源]
 ---
 
-这是 [手机桌面模拟器开发全记录](/effective-pancake/2026/07/30/phone-desktop-dev-record.html) 的项目附录。
+这是 [手机桌面模拟器开发全记录]({% post_url 2026-07-30-phone-desktop-dev-record %}) 的项目附录。
 
 ## 📥 下载
 

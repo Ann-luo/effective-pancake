@@ -129,25 +129,34 @@ cd /c/tmp/effective-pancake
 python - <<'PYEOF'
 import io,re,glob,os,sys
 sys.stdout.reconfigure(encoding='utf-8',errors='replace')
-idx=io.open('index.md',encoding='utf-8').read()
 posts={os.path.basename(p)[:-3] for p in glob.glob('_posts/*.md')}
-refs=re.findall(r'\{%\s*post_url\s+(\S+?)\s*%\}',idx)
-print('post_url 对不上的:', [r for r in refs if r not in posts] or '无')
 CANON={'VS Code & GitHub Copilot','Windows 技巧','GitHub & 博客搭建',
        'Claude Code & AI 工具','杂项','Codex & Computer Use','日志'}
-for p in sorted(glob.glob('_posts/*.md')):
-    t=io.open(p,encoding='utf-8').read()
-    m=re.match(r'^---\r?\n(.*?)\r?\n---\r?\n',t,re.S)
-    if not m:
-        print('  无 front matter:',p); continue
-    c=re.search(r'^categories:\s*(.*)$',m.group(1),re.M)
+problems=[]
+# 正文也要查——文章里引用别的文章、引用附件，同样会用 post_url 和站内链接
+for f in ['index.md']+sorted(glob.glob('_posts/*.md')):
+    t=io.open(f,encoding='utf-8').read()
+    for r in re.findall(r'\{%\s*post_url\s+(\S+?)\s*%\}',t):
+        if r not in posts: problems.append('%s: post_url 对不上 -> %s'%(f,r))
+    for m in re.findall(r'\]\((/effective-pancake/\d{4}/\d{2}/\d{2}/[^)]*)\)',t):
+        problems.append('%s: 硬编码文章网址，应改用 post_url -> %s'%(f,m))
+    for m in re.findall(r'\]\((\.\.?/[^)]*)\)',t):
+        problems.append('%s: 相对链接，博客上会 404 -> %s'%(f,m))
+    for m in re.findall(r'\]\(/effective-pancake/((?:assets|skills)/[^)]*)\)',t):
+        if not os.path.exists(m): problems.append('%s: 资源不存在 -> %s'%(f,m))
+    if not f.startswith('_posts'):
+        continue          # index.md 是首页，没有 categories/title 那一套
+    fm=re.match(r'^---\r?\n(.*?)\r?\n---\r?\n',t,re.S)
+    if not fm:
+        problems.append('%s: 缺 front matter'%f); continue
+    c=re.search(r'^categories:\s*(.*)$',fm.group(1),re.M)
     if not c or not c.group(1).startswith('['):
-        print('  categories 不是列表:',p)
+        problems.append('%s: categories 不是列表'%f)
     elif c.group(1).strip('[]"\'') not in CANON:
-        print('  categories 不在清单:',p,c.group(1))
-    if re.match(r'^#\s',t[m.end():].lstrip('\r\n').split('\n')[0]):
-        print('  正文有多余 H1:',p)
-print('自检结束')
+        problems.append('%s: categories 不在清单 -> %s'%(f,c.group(1)))
+    if re.match(r'^#\s',t[fm.end():].lstrip('\r\n').split('\n')[0]):
+        problems.append('%s: 正文有多余 H1'%f)
+print('\n'.join('  '+p for p in problems) if problems else '自检通过 ✓')
 PYEOF
 ```
 
@@ -193,9 +202,14 @@ curl -s https://ann-luo.github.io/effective-pancake/ | grep "文章标题"
 
 ## 仓库约定（容易踩的坑）
 
+- **正文里的一切站内链接都要能通过博客访问**（GitHub 上点得开 ≠ 博客上点得开）：
+  - 引用别的文章 → 用 `{% post_url YYYY-MM-DD-slug %}`，不要手写 `/effective-pancake/2026/07/27/xxx.html` 这种网址（URL 格式以后可能再变）
+  - 引用附件 → 用绝对路径 `/effective-pancake/assets/...`。**不要用 `../assets/...`** —— 文章网址是 `/2026/06/12/slug.html` 这种带层级的，`../` 会指向错误的位置
+  - 引用 `skills/` 下的 skill 文件 → 用 GitHub 地址（`https://github.com/Ann-luo/effective-pancake/blob/main/skills/...`）。因为带 front matter 的 `SKILL.md` 会被 Jekyll 渲染成 `.html`，`.md` 链接会 404；不带 front matter 的则反之。直接指向 GitHub 最省事
 - **permalink 已显式设置**为 `/:year/:month/:day/:title:output_ext`，URL 里**不含 categories**。所以改分类名不会改 URL；反过来说，别把 categories 当路径用
 - **`_config.yml` 里有 `exclude`**，其中 `post/` 和 `README.md` 不会被发布。旧文不要往 `post/` 里放
 - **`.gitignore` 已忽略 `_site/`、`.jekyll-cache/`**。本地若装了 Ruby 跑过 `jekyll build`，别把生成目录提交上来
 - **⚠️ Jekyll 未来日期陷阱**：Jekyll 默认 `future: false`，构建时跳过 date 晚于构建时间的文章。GitHub Actions 用 UTC（= CST-8）。所以 `date` 统一用 `12:00:00 +0800`，别用晚上时间
 - **⚠️ Skill 类型不要搞混**：附带 Skill 时先确认是 Claude Code 还是 Codex 用的。Codex Skill 不要写 `cp -r ... ~/.claude/skills/`
 - **三个文件必须同步**：`_posts/`（front matter）+ `index.md`（导航）+ `README.md`（目录表 + 结构图，两处）
+- **推送后一定要验证**：CI 构建成功 ≠ 链接都对。构建完成后抽查新文章的网址和首页上的站内链接，死了就补一次提交

@@ -2254,9 +2254,9 @@ APK 兼容性教训：**模拟器 ≠ 真机。** Canvas GPU 纹理限制、fetc
 
 ## 🌿 项目附录
 
-📥 **下载项目文件**：[p-ent-phone.html](../assets/p-ent-phone/p-ent-phone.html)（右键另存为）
+📥 **下载项目文件**：[p-ent-phone.html](/effective-pancake/assets/p-ent-phone/p-ent-phone.html)（右键另存为）
 
-📖 **项目 README**：[查看完整说明](../assets/p-ent-phone/README.md)
+📖 **项目 README**：[查看完整说明](/effective-pancake/assets/p-ent-phone/README.md)
 
 > 单文件 ~9956 行，零依赖。双击 HTML 即可运行，或用 HBuilder 打包为 APK。
 

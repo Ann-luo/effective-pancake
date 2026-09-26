@@ -24,7 +24,7 @@ title: effective-pancake
 
 **四、Claude Code & AI 工具**
 - 4.1 [Codex CDP Skill：跨模型通信踩坑与修复]({% post_url 2026-06-10-codex-cdp-skill %})
-- 4.2 📦 [Skill 资源包：codex-chat](./skills/codex-chat/SKILL.md)
+- 4.2 📦 [Skill 资源包：codex-chat](https://github.com/Ann-luo/effective-pancake/blob/main/skills/codex-chat/SKILL.md)
 - 4.3 [Publish Blog Skill：一条龙自动发布博客的原理]({% post_url 2026-06-10-publish-blog-skill %})
 - 4.4 [从零到一：AI 聊天应用全栈开发记录]({% post_url 2026-07-23-AI聊天应用开发全记录 %})
 - 4.4a 　└ [Phone 脱敏通用版]({% post_url 2026-07-28-phone-ai-chat-app %}) · [下载 phone.html](/effective-pancake/assets/phone.html)
@@ -42,7 +42,7 @@ title: effective-pancake
 
 **六、Codex & Computer Use**
 - 6.1 [Codex 控制 QQ 发消息——一晚上的调试记录]({% post_url 2026-06-11-codex-qq-messenger-debug %})
-- 6.2 📦 [Skill 资源包：qq-messenger](./skills/qq-messenger/SKILL.md)
+- 6.2 📦 [Skill 资源包：qq-messenger](https://github.com/Ann-luo/effective-pancake/blob/main/skills/qq-messenger/SKILL.md)
 - 6.3 [原始聊天记录](/effective-pancake/assets/codex-qq-2026-06-11.txt)
 - 6.4 [Codex 突然变英文？图片输入与中文补丁排查]({% post_url 2026-09-25-Codex突然变英文与图片输入排查 %})
 
@@ -50,7 +50,7 @@ title: effective-pancake
 - 7.1 [跟 AI 学编程的第一天：Skills、服务器、前后端]({% post_url 2026-06-12-跟AI学编程的第一天 %})
 - 7.2 [原始聊天记录](/effective-pancake/assets/ai-学编程-聊天记录-2026-06-12.txt)
 - 🎮 [猜数字小游戏（双击版）](/effective-pancake/assets/games/guess-the-number.html)
-- 🎮 [猜数字小游戏（服务器版）](/effective-pancake/assets/games/codex-demo/)
+- 🎮 [猜数字小游戏（服务器版）](/effective-pancake/assets/games/codex-demo/README.md)
 
 ---
 

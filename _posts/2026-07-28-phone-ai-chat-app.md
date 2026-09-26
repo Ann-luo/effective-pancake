@@ -6,7 +6,7 @@ categories: ["Claude Code & AI 工具"]
 tags: [HTML, AI, 开源]
 ---
 
-[Phone](/effective-pancake/assets/phone.html) 是从[AI 聊天应用开发项目](/effective-pancake/2026/07/23/ai-chat-app-dev-record.html)脱敏而来的通用版——去掉了所有角色设定和个人信息，换上通用 AI 助手人设。
+[Phone](/effective-pancake/assets/phone.html) 是从[AI 聊天应用开发项目]({% post_url 2026-07-23-AI聊天应用开发全记录 %})脱敏而来的通用版——去掉了所有角色设定和个人信息，换上通用 AI 助手人设。
 
 📥 **[下载 phone.html](/effective-pancake/assets/phone.html)**（右键另存为，~380KB，双击即用）
 
@@ -54,7 +54,7 @@ tags: [HTML, AI, 开源]
 
 ## 打包成 APK
 
-用 HBuilder X 打开 `phone.html` → 发行 → 原生 App-云打包。详见 [HBuilder 本地调试实录](/effective-pancake/claude%20code/ai%E5%B7%A5%E5%85%B7/2026/07/27/hbuilder-local-debug.html)。
+用 HBuilder X 打开 `phone.html` → 发行 → 原生 App-云打包。详见 [HBuilder 本地调试实录]({% post_url 2026-07-27-hbuilder-local-debug %})。
 
 ---
 
