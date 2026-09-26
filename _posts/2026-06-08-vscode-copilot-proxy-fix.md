@@ -2,7 +2,7 @@
 layout: post
 title: "VS Code GitHub Copilot 代理连接错误：排查与修复完全指南"
 date: 2026-06-08
-categories: [教程, VS Code]
+categories: ["VS Code & GitHub Copilot"]
 tags: [VS Code, GitHub Copilot, 代理, 网络故障, 新手教程]
 description: "解决 ERR_PROXY_CONNECTION_FAILED 问题，从定位到根治的完整记录"
 ---

@@ -12,42 +12,42 @@ title: effective-pancake
 ## 📂 文章导航
 
 **一、VS Code & GitHub Copilot**
-- 1.1 代理连接错误：排查与修复完全指南
-- 1.2 原始排查聊天记录
+- 1.1 [代理连接错误：排查与修复完全指南]({% post_url 2026-06-08-vscode-copilot-proxy-fix %})
+- 1.2 [原始排查聊天记录]({% post_url 2026-06-08-vscode-copilot-proxy-chatlog %})
 
 **二、Windows 技巧**
-- 2.1 符号链接完全指南：拯救 C 盘空间
-- 2.2 原始探索聊天记录
+- 2.1 [符号链接完全指南：拯救 C 盘空间]({% post_url 2026-06-08-windows-symlink-guide %})
+- 2.2 [原始探索聊天记录]({% post_url 2026-06-08-windows-symlink-chatlog %})
 
 **三、GitHub & 博客搭建**
-- 3.1 GitHub 仓库变身博客完全指南
+- 3.1 [GitHub 仓库变身博客完全指南]({% post_url 2026-06-10-github-repo-to-blog-guide %})
 
 **四、Claude Code & AI 工具**
-- 4.1 Codex CDP Skill：跨模型通信踩坑与修复
-- 4.2 Skill 资源包：codex-chat
-- 4.3 Publish Blog Skill：一条龙自动发布博客的原理
-- 4.4 从零到一：AI 聊天应用全栈开发记录
-- 4.4a 　└ [Phone 脱敏通用版下载](./assets/phone.html)
-- 4.5 HBuilder 本地调试实录 — 不消耗云打包额度
-- 4.6 手机桌面模拟器：给 AI 聊天应用加个"操作系统"
-- 🌿 　└ [附：项目文件下载与说明](./_posts/2026-08-03-pent-phone-appendix.md)
-- 4.7 手机桌面模拟器 v2：9956行→7438行模块化重构
+- 4.1 [Codex CDP Skill：跨模型通信踩坑与修复]({% post_url 2026-06-10-codex-cdp-skill %})
+- 4.2 📦 [Skill 资源包：codex-chat](./skills/codex-chat/SKILL.md)
+- 4.3 [Publish Blog Skill：一条龙自动发布博客的原理]({% post_url 2026-06-10-publish-blog-skill %})
+- 4.4 [从零到一：AI 聊天应用全栈开发记录]({% post_url 2026-07-23-AI聊天应用开发全记录 %})
+- 4.4a 　└ [Phone 脱敏通用版]({% post_url 2026-07-28-phone-ai-chat-app %}) · [下载 phone.html](/effective-pancake/assets/phone.html)
+- 4.5 [HBuilder 本地调试实录 — 不消耗云打包额度]({% post_url 2026-07-27-hbuilder-local-debug %})
+- 4.6 [手机桌面模拟器开发全记录]({% post_url 2026-07-30-phone-desktop-dev-record %})
+- 🌿 　└ [附：项目文件下载与说明]({% post_url 2026-08-03-pent-phone-appendix %})
+- 4.7 [v2 模块化重构全记录]({% post_url 2026-08-04-pent-phone-v2-modules %})
 - 🌿 　└ [附：v2 项目仓库](https://github.com/Ann-luo/p-ent-phone)
-- 4.8 [APK 签名证书完全指南（小白科普）](./_posts/2026-08-05-apk-signing-guide.md)
-- 4.9 [手机里塞个AI论坛——智能体发帖回帖全记录](./_posts/2026-08-09-forum-ai-bbs.md)
+- 4.8 [APK 签名证书完全指南（小白科普）]({% post_url 2026-08-05-apk-signing-guide %})
+- 4.9 [手机里塞个AI论坛——智能体发帖回帖全记录]({% post_url 2026-08-09-forum-ai-bbs %})
 
 **五、杂项**
-- 5.1 AI 茶馆夜话：两个 AI 在我电脑上聊起来了
+- 5.1 [AI 茶馆夜话：两个 AI 在我电脑上聊起来了]({% post_url 2026-06-10-ai-tea-room %})
 - 5.2 [原始聊天记录](/effective-pancake/assets/codex-cc-2026-06-10.txt)
 
 **六、Codex & Computer Use**
-- 6.1 Codex 控制 QQ 发消息——一晚上的调试记录
-- 6.2 Skill 资源包：qq-messenger
+- 6.1 [Codex 控制 QQ 发消息——一晚上的调试记录]({% post_url 2026-06-11-codex-qq-messenger-debug %})
+- 6.2 📦 [Skill 资源包：qq-messenger](./skills/qq-messenger/SKILL.md)
 - 6.3 [原始聊天记录](/effective-pancake/assets/codex-qq-2026-06-11.txt)
-- 6.4 [Codex 突然变英文？图片输入与中文补丁排查](./_posts/2026-09-25-Codex突然变英文与图片输入排查.md)
+- 6.4 [Codex 突然变英文？图片输入与中文补丁排查]({% post_url 2026-09-25-Codex突然变英文与图片输入排查 %})
 
 **七、日志**
-- 7.1 跟 AI 学编程的第一天：Skills、服务器、前后端
+- 7.1 [跟 AI 学编程的第一天：Skills、服务器、前后端]({% post_url 2026-06-12-跟AI学编程的第一天 %})
 - 7.2 [原始聊天记录](/effective-pancake/assets/ai-学编程-聊天记录-2026-06-12.txt)
 - 🎮 [猜数字小游戏（双击版）](/effective-pancake/assets/games/guess-the-number.html)
 - 🎮 [猜数字小游戏（服务器版）](/effective-pancake/assets/games/codex-demo/)

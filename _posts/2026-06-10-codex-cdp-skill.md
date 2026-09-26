@@ -2,7 +2,7 @@
 layout: post
 title: "Claude Code × Codex 通信：自定义 CDP Skill 踩坑与修复"
 date: 2026-06-10
-categories: [教程, Claude Code]
+categories: ["Claude Code & AI 工具"]
 tags: [Claude Code, Codex, CDP, Skill, 自定义技能, 跨模型通信]
 description: "Claude Code 自定义 Skill 的正确格式、扁平文件陷阱、CDP 页面检测修复，附带完整 skill 资源包"
 ---

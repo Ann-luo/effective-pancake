@@ -1,4 +1,10 @@
-# GitHub 仓库变身博客完全指南
+---
+layout: post
+title: "GitHub 仓库变身博客完全指南"
+date: 2026-06-10 12:00:00 +0800
+categories: ["GitHub & 博客搭建"]
+tags: [GitHub, Jekyll, GitHub Pages, 博客搭建, 教程]
+---
 
 > **日期**：2026 年 6 月 10 日  
 > **难度**：纯小白友好  

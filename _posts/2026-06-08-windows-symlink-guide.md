@@ -2,7 +2,7 @@
 layout: post
 title: "Windows 符号链接完全指南：拯救 C 盘空间"
 date: 2026-06-08
-categories: [教程, Windows]
+categories: ["Windows 技巧"]
 tags: [Windows, 符号链接, mklink, C盘清理, 磁盘管理, VS Code, Steam]
 description: "mklink /J 命令详解 + Link Shell Extension 图形化工具 + VS Code 实战迁移"
 ---

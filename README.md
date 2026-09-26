@@ -41,7 +41,7 @@
 | 4.1 | [Claude Code × Codex CDP Skill：跨模型通信踩坑与修复](./_posts/2026-06-10-codex-cdp-skill.md) | 自定义 Skill — 扁平文件陷阱、CDP 页面检测修复 |
 | 4.2 | 　📦 [Skill 资源包：codex-chat](./skills/codex-chat/SKILL.md) | 下载后放入 `~/.claude/skills/`，重启即可用 `/codex-chat` |
 | 4.3 | [Publish Blog Skill：一条龙自动发布博客的原理](./_posts/2026-06-10-publish-blog-skill.md) | Skill 设计思路 — 怎么让 AI 写文章不漏改一个文件 |
-| 4.4 | [从零到一：AI 聊天应用全栈开发记录](./_posts/2026-07-23-AI聊天应用开发全记录.md) | 单文件 ~9600 行，含多智能体 + 流式 + 多气泡 + 沉默 + 日记 + 朋友圈 + 锁屏 + IndexedDB + 平行宇宙 + 时间线 + 共享待办 + 共享歌单 + 钱包系统 + 图片裁剪 + 礼物互动 + 导出统一 + APK 自适应 + 导入全覆盖 + 字卡系统（无 API 也能聊） |
+| 4.4 | [从零到一：AI 聊天应用全栈开发记录](./_posts/2026-07-23-AI聊天应用开发全记录.md) | 单文件 ~9600 行，多智能体 + 流式对话 + 朋友圈 + 钱包 + 字卡系统，无 API 也能聊 |
 | 　 | 　└ [Phone 脱敏通用版](./_posts/2026-07-28-phone-ai-chat-app.md) | 📥 [下载 phone.html](./assets/phone.html) · 去掉角色设定，开箱即用 |
 | 4.5 | [HBuilder 本地调试实录 — 不消耗云打包额度](./_posts/2026-07-27-hbuilder-local-debug.md) | Android SDK + AVD 命令行搭建，零额度反复调试 APK |
 | 4.6 | [手机桌面模拟器开发全记录](./_posts/2026-07-30-phone-desktop-dev-record.md) | 锁屏+桌面+22个App+7个小游戏+小组件+钱包，单文件 ~9970 行，69章全记录 |
@@ -118,6 +118,7 @@ effective-pancake/
 │   ├── 2026-06-10-codex-cdp-skill.md                 (4.1) Codex CDP Skill
 │   ├── 2026-06-10-publish-blog-skill.md               (4.3) Publish Blog Skill
 │   ├── 2026-07-23-AI聊天应用开发全记录.md               (4.4) AI 聊天应用开发记录
+│   ├── 2026-07-28-phone-ai-chat-app.md               (4.4a) ├ Phone 脱敏通用版
 │   ├── 2026-07-27-hbuilder-local-debug.md           (4.5) HBuilder 本地调试实录
 │   ├── 2026-07-30-phone-desktop-dev-record.md        (4.6) 手机桌面模拟器开发全记录
 │   ├── 2026-08-03-pent-phone-appendix.md               (🌿) ├ 项目文件下载与说明
@@ -129,7 +130,7 @@ effective-pancake/
 │   ├── 2026-06-10-ai-tea-room.md                     (5.1) AI 茶馆夜话
 │   └── 2026-06-12-跟AI学编程的第一天.md                 (7.1) 跟 AI 学编程
 │
-├── post/                    ← 旧版文章
+├── post/                    ← 旧版文章（已在 _config.yml 里 exclude，不发布）
 │   ├── 符号链接.md
 │   └── 重置系统和iOS的区别.md
 │
@@ -180,5 +181,5 @@ effective-pancake/
 
 ---
 
-*最后更新：2026 年 9 月 25 日*
+*最后更新：2026 年 9 月 26 日*
 

@@ -2,7 +2,7 @@
 layout: post
 title: "Publish Blog Skill：一条龙自动发布博客的原理"
 date: 2026-06-10 14:00:00 +0800
-categories: ["四、Claude Code & AI 工具"]
+categories: ["Claude Code & AI 工具"]
 tags: [Claude Code, Skill, Jekyll, 博客自动化, GitHub Pages]
 ---
 

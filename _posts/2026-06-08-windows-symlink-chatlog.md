@@ -2,7 +2,7 @@
 layout: post
 title: "Windows 符号链接：原始探索聊天记录"
 date: 2026-06-08
-categories: [聊天记录, Windows]
+categories: ["Windows 技巧"]
 tags: [Windows, 符号链接, mklink, 聊天记录]
 description: "从忘记命令到掌握符号链接的全过程"
 ---

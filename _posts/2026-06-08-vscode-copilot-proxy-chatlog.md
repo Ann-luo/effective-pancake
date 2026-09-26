@@ -2,7 +2,7 @@
 layout: post
 title: "GitHub Copilot 代理排查：原始聊天记录"
 date: 2026-06-08
-categories: [聊天记录, VS Code]
+categories: ["VS Code & GitHub Copilot"]
 tags: [VS Code, GitHub Copilot, 代理, 聊天记录]
 description: "从报错到解决的真实对话过程"
 ---

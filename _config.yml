@@ -5,6 +5,24 @@ theme: minima
 baseurl: "/effective-pancake"
 url: "https://ann-luo.github.io"
 
+# URL 不含 categories：否则改分类名 = 改 URL
+permalink: /:year/:month/:day/:title:output_ext
+
+# 注意：显式设置 exclude 会替换 Jekyll 的默认排除项，所以默认项也要列全
+exclude:
+  - .sass-cache/
+  - .jekyll-cache/
+  - gemfiles/
+  - Gemfile
+  - Gemfile.lock
+  - node_modules/
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - post/
+  - README.md
+
 minima:
   date_format: "%Y年%m月%d日"
   social_links:

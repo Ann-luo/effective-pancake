@@ -2,7 +2,7 @@
 layout: post
 title: "附：Phone 脱敏通用版下载"
 date: 2026-07-28 12:00:00 +0800
-categories: [Claude Code, AI工具]
+categories: ["Claude Code & AI 工具"]
 tags: [HTML, AI, 开源]
 ---
 

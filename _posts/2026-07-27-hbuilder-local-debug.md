@@ -2,10 +2,9 @@
 layout: post
 title: "HBuilder 本地调试实录 — 不消耗云打包额度"
 date: 2026-07-27 12:00:00 +0800
-categories: [Claude Code, AI工具]
+categories: ["Claude Code & AI 工具"]
 tags: [HBuilder, Android, AVD, APK, 调试, 模拟器, 网络]
 ---
-# HBuilder 本地调试实录 — 不消耗云打包额度
 
 你在 HBuilder X 里做一个 HTML 转 APK 的项目，每次改完都得"发行 → 原生 App-云打包"上传到 DCloud 服务器编译成 APK。来来回回改个字号调个颜色都打包一次，免费额度一天就那么几次，用完了就只能干等着。
 
