@@ -146,6 +146,13 @@ for f in ['index.md']+sorted(glob.glob('_posts/*.md')):
         problems.append('%s: 相对链接，博客上会 404 -> %s'%(f,m))
     for m in re.findall(r'\]\(/effective-pancake/((?:assets|skills)/[^)]*)\)',scan):
         if not os.path.exists(m): problems.append('%s: 资源不存在 -> %s'%(f,m))
+    # Liquid 在代码块里也会真执行（代码围栏对它只是普通文字）：
+    # 所以查全文，剥掉 raw 包裹后剩下的 {% %} 必须都是能解析的 post_url
+    stripped=re.sub(r'\{%\s*raw\s*%\}.*?\{%\s*endraw\s*%\}','',t,flags=re.S)
+    for tag in re.findall(r'\{%\s*(.*?)\s*%\}',stripped):
+        if tag in ('raw','endraw'): continue
+        if tag.startswith('post_url') and tag[8:].strip() in posts: continue
+        problems.append('%s: 会真执行的 Liquid 标签有风险，须用 raw 包裹 -> {%% %s %%}'%(f,tag))
     if not f.startswith('_posts'):
         continue          # index.md 是首页，没有 categories/title 那一套
     fm=re.match(r'^---\r?\n(.*?)\r?\n---\r?\n',t,re.S)
