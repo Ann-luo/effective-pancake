@@ -54,7 +54,7 @@ title: effective-pancake
 - 🎮 [猜数字小游戏（服务器版）](/effective-pancake/assets/games/codex-demo/README.md)
 
 **八、DSH & 插件生态**
-- 8.1 [DSH 皮肤插件安装踩坑全记录]({% post_url 2026-09-30-DSH皮肤插件安装踩坑全记录 %})
+- 8.1 [DSH 皮肤与美化插件安装踩坑全记录]({% post_url 2026-09-30-DSH皮肤与美化插件安装踩坑全记录 %})
 
 ---
 
