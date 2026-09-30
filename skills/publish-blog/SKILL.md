@@ -131,7 +131,8 @@ import io,re,glob,os,sys
 sys.stdout.reconfigure(encoding='utf-8',errors='replace')
 posts={os.path.basename(p)[:-3] for p in glob.glob('_posts/*.md')}
 CANON={'VS Code & GitHub Copilot','Windows 技巧','GitHub & 博客搭建',
-       'Claude Code & AI 工具','杂项','Codex & Computer Use','日志'}
+       'Claude Code & AI 工具','杂项','Codex & Computer Use','日志',
+       'DSH & 插件生态'}
 problems=[]
 # 正文也要查——文章里引用别的文章、引用附件，同样会用 post_url 和站内链接
 for f in ['index.md']+sorted(glob.glob('_posts/*.md')):
@@ -193,7 +194,7 @@ curl -s https://ann-luo.github.io/effective-pancake/ | grep "文章标题"
 
 若 Actions 失败，去仓库 Actions 页看构建日志 —— `post_url` 拼错是最常见原因。
 
-## 分类清单（categories 只能取这七个值）
+## 分类清单（categories 只能取这八个值）
 
 | index.md / README 区块标题 | front matter 里的取值 |
 |---|---|
@@ -204,6 +205,7 @@ curl -s https://ann-luo.github.io/effective-pancake/ | grep "文章标题"
 | 五、杂项 | `"杂项"` |
 | 六、Codex & Computer Use | `"Codex & Computer Use"` |
 | 七、日志 | `"日志"` |
+| 八、DSH & 插件生态 | `"DSH & 插件生态"` |
 
 注意：front matter 里**不带**中文数字前缀（不带「六、」），前缀只出现在 index.md / README 的区块标题里。
 
