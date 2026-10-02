@@ -1,7 +1,3 @@
----
-name: publish-blog
-description: 把文章发布到 effective-pancake 博客（Ann-luo/effective-pancake），并同步 index.md 导航与 README.md 目录/结构图。用于"发文章""推博客""写新文章到博客""publish blog post"等请求。内含提交前自检脚本与仓库约定（post_url、分类清单、未来日期陷阱）。
----
 
 # Publish Blog
 
