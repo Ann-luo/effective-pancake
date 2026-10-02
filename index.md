@@ -64,6 +64,9 @@ title: effective-pancake
 - 8.7 [手机遥控电脑：从局域网配对，到第一次给开源项目提 issue]({% post_url 2026-10-02-手机遥控电脑-从局域网配对到给dsh-mobile提issue %})
 - 　└ 📄 [附：提交的 issue 原文（dsh-mobile #150）](/effective-pancake/assets/dsh-mobile-issue-150-原文.md)
 
+**九、调试与排查方法**
+- 9.1 [我盲解了一个未知的文件格式——三次失败后才找对路]({% post_url 2026-10-02-盲解未知文件格式 %})
+
 ---
 
 > 详细文章列表见下方自动生成的目录 👇
