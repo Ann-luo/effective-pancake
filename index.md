@@ -66,8 +66,8 @@ title: effective-pancake
 
 **九、调试与排查方法**
 - 9.1 [我盲解了一个未知的文件格式——三次失败后才找对路]({% post_url 2026-10-02-盲解未知文件格式 %})
-- 　└ 📦 [Skill 资源包：export-dsh-chat](https://github.com/Ann-luo/effective-pancake/blob/main/skills/export-dsh-chat/SKILL.md)（读 / 导出 DSH 聊天记录；`read-session.js` 直接读，`export-sessions.js` 落盘）
 - 9.2 [我用 TypeScript 把《星夜》拆成几万笔立体笔触——最后撞上一堵 3 秒/帧的墙]({% post_url 2026-10-03-星夜3D-从梵高油画到可穿行的笔触空间 %})
+- 　└ 📦 [Skill 资源包：export-dsh-chat](https://github.com/Ann-luo/effective-pancake/blob/main/skills/export-dsh-chat/SKILL.md)（读 / 导出 DSH 聊天记录；`read-session.js` 直接读，`export-sessions.js` 落盘）
 
 ---
 
