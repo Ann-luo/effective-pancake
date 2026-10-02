@@ -19,3 +19,7 @@ vendor/
 .DS_Store
 Thumbs.db
 desktop.ini
+# 编辑时的本地备份，不要提交
+*.bak
+*.bak-*
+*.orig
