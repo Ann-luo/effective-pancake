@@ -112,18 +112,33 @@ cp -r skills/publish-blog ~/.claude/skills/
 
 **Codex Skill** → 将 `skills/qq-messenger/SKILL.md` 放入 Codex 的 skills 目录，即可通过 Codex Computer Use 控制 QQ 发消息。
 
+**DSH Skill** → 复制到 DeepSeek Harness 的技能目录（PowerShell）：
+```powershell
+Copy-Item -Recurse skills\export-dsh-chat $env:USERPROFILE\.agents\skills\
+```
+
 **投稿 / 复刻** → `git clone` → 在 `_posts/` 新建文章 → `git push` → 自动部署。
 
 ---
 
 ## 🛠 Skills 资源包
 
+> ⚠️ **这里的 Skill 分属三个不同平台，安装目录不一样，别搞混：**
+>
+> | 平台 | 安装目录 | 本仓库里有哪些 |
+> |---|---|---|
+> | **Claude Code** | `~/.claude/skills/` | codex-chat、publish-blog |
+> | **DSH**（DeepSeek Harness） | `~/.agents/skills/` | **export-dsh-chat** |
+> | **Codex**（OpenAI） | Codex 自己的 skills 目录 | qq-messenger |
+>
+> 装错目录的话，对应的工具不会加载（而且通常**不报错**，就是不生效）。
+
 | # | Skill | 说明 | 安装 |
 |---|-------|------|------|
-| 4.2 | [codex-chat](./skills/codex-chat/SKILL.md) | 通过 CDP 与 OpenAI Codex 桌面客户端通信，对应文章 4.1 | `cp -r skills/codex-chat ~/.claude/skills/` |
-| 4.3 | [publish-blog](./skills/publish-blog/SKILL.md) | 一条龙博客发布：写文章 → 更新索引 → 自动推送，对应文章 4.3 | `cp -r skills/publish-blog ~/.claude/skills/` |
-| 6.2 | [qq-messenger](./skills/qq-messenger/SKILL.md) | 通过 Codex Computer Use 控制 Windows QQ 发消息，对应文章 6.1 | 放入 Codex 的 skills 目录 |
-| 9.1 | [export-dsh-chat](./skills/export-dsh-chat/SKILL.md) | 导出 DSH 聊天记录为可读 JSONL（含多帧 zstd 解析算法），对应文章 9.1 | **DSH Skill** → `Copy-Item -Recurse skills\export-dsh-chat $env:USERPROFILE\.agents\skills\` |
+| 4.2 | [codex-chat](./skills/codex-chat/SKILL.md) | 通过 CDP 与 OpenAI Codex 桌面客户端通信，对应文章 4.1 | **Claude Code** → `cp -r skills/codex-chat ~/.claude/skills/` |
+| 4.3 | [publish-blog](./skills/publish-blog/SKILL.md) | 一条龙博客发布：写文章 → 更新索引 → 自动推送，对应文章 4.3 | **Claude Code** → `cp -r skills/publish-blog ~/.claude/skills/` |
+| 6.2 | [qq-messenger](./skills/qq-messenger/SKILL.md) | 通过 Codex Computer Use 控制 Windows QQ 发消息，对应文章 6.1 | **Codex** → 放入 Codex 的 skills 目录 |
+| 9.1 | [export-dsh-chat](./skills/export-dsh-chat/SKILL.md) | 导出 DSH 聊天记录为可读 JSONL（含多帧 zstd 解析算法），对应文章 9.1 | **DSH** → `Copy-Item -Recurse skills\export-dsh-chat $env:USERPROFILE\.agents\skills\` |
 
 ---
 
