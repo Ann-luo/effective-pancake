@@ -1,3 +1,7 @@
+---
+name: publish-blog
+description: 把文章发布到 effective-pancake 博客（Ann-luo/effective-pancake），并同步 index.md 导航与 README.md 目录/结构图。用于"发文章""推博客""写新文章到博客""publish blog post"等请求。内含提交前自检脚本与仓库约定（post_url、分类清单、未来日期陷阱）。
+---
 
 # Publish Blog
 
@@ -188,7 +192,7 @@ os.chdir(r'C:\tmp\effective-pancake')
 posts = {os.path.basename(p)[:-3] for p in glob.glob('_posts/*.md')}
 CANON = {'VS Code & GitHub Copilot', 'Windows 技巧', 'GitHub & 博客搭建',
          'Claude Code & AI 工具', '杂项', 'Codex & Computer Use', '日志',
-         'DSH & 插件生态'}
+         'DSH & 插件生态', '调试与排查方法'}
 problems = []
 
 # 正文也要查——文章里引用别的文章、引用附件，同样会用 post_url 和站内链接
@@ -228,6 +232,18 @@ for f in ['index.md'] + sorted(glob.glob('_posts/*.md')):
         problems.append('%s: categories 不在清单 -> %s' % (f, c.group(1)))
     if re.match(r'^#\s', t[fm.end():].lstrip('\r\n').split('\n')[0]):
         problems.append('%s: 正文有多余 H1' % f)
+
+# ===== skills/ 专项检查（2026-10-02 真实事故：构建被这个搞挂两次）=====
+# 出事要两个条件同时满足：有 front matter（Jekyll 当页面渲染它）+ 有 {% %}（渲染时真执行）
+#   只有其一都安全：
+#     有 front matter 无 Liquid（codex-chat/export-dsh-chat/qq-messenger）→ 没事
+#     有 Liquid 无 front matter（publish-blog/SKILL.md）→ 当静态文件复制 → 也没事
+for f in sorted(glob.glob('skills/**/*.md',recursive=True)):
+    t=io.open(f,encoding='utf-8').read()
+    has_fm=bool(re.match(r'^---\r?\n',t))
+    liquid=re.findall(r'\{%\s*(?!raw\b|endraw\b).*?%\}',t)
+    if has_fm and liquid:
+        problems.append('%s: ⚠ 有 front matter + %d 处 Liquid → Jekyll 会渲染并执行，构建必失败（删 front matter）'%(f,len(liquid)))
 
 print('\n'.join('  ' + p for p in problems) if problems else '自检通过 ✓')
 ```
