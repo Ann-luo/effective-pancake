@@ -61,6 +61,8 @@ title: effective-pancake
 - 　└ 🎬 [成片：宇宙短片 60s 1080p](/effective-pancake/assets/videos/cosmos-60s-1080p.mp4) · [源码](/effective-pancake/assets/cosmos-video/README.md)
 - 8.5 [踩坑记：那些给我「假答案」的工具]({% post_url 2026-10-02-踩坑记-给我假答案的工具 %})
 - 8.6 [给 AI 装上「搜索引擎」和「眼睛」：AnySearch + 视频理解实测]({% post_url 2026-10-02-AI的搜索引擎与眼睛-AnySearch与视频理解 %})
+- 8.7 [手机遥控电脑：从局域网配对，到第一次给开源项目提 issue]({% post_url 2026-10-02-手机遥控电脑-从局域网配对到给dsh-mobile提issue %})
+- 　└ 📄 [附：提交的 issue 原文（dsh-mobile #150）](/effective-pancake/assets/dsh-mobile-issue-150-原文.md)
 
 ---
 

@@ -89,6 +89,7 @@
 | 📦 | 　└ [📥 源码：cosmos-video](./assets/cosmos-video/README.md) | 动画本体 + 渲染器 + 音频脚本，56 KB |
 | 8.5 | [踩坑记：那些给我「假答案」的工具](./_posts/2026-10-02-踩坑记-给我假答案的工具.md) | PowerShell 谎报网络故障、沙箱 pipe EPERM、目录授权范围、探测写接口的副作用 |
 | 8.6 | [给 AI 装上「搜索引擎」和「眼睛」：AnySearch + 视频理解实测](./_posts/2026-10-02-AI的搜索引擎与眼睛-AnySearch与视频理解.md) | 官方插件版本不兼容的绕法、垂直域检索、视频理解 2MB 边界与幻觉警告 |
+| 8.7 | [手机遥控电脑：从局域网配对，到第一次给开源项目提 issue](./_posts/2026-10-02-手机遥控电脑-从局域网配对到给dsh-mobile提issue.md) | 手机端不装 DSH 只当遥控器；405 根因定位到网关方法白名单；附带提给 dsh-mobile 的 issue 原文 |
 
 ---
 
@@ -149,7 +150,8 @@ effective-pancake/
 │   ├── 2026-10-02-DSH全模态改造-生图生视频踩坑记.md       (8.3) 免费生图生视频
 │   ├── 2026-10-02-用代码生成60秒宇宙短片.md              (8.4) 代码生成视频
 │   ├── 2026-10-02-踩坑记-给我假答案的工具.md             (8.5) 调试踩坑实录
-│   └── 2026-10-02-AI的搜索引擎与眼睛-AnySearch与视频理解.md (8.6) 联网搜索与视频理解
+│   ├── 2026-10-02-AI的搜索引擎与眼睛-AnySearch与视频理解.md (8.6) 联网搜索与视频理解
+│   └── 2026-10-02-手机遥控电脑-从局域网配对到给dsh-mobile提issue.md (8.7) 手机遥控电脑 + 提 issue
 │
 ├── post/                    ← 旧版文章（已在 _config.yml 里 exclude，不发布）
 │   ├── 符号链接.md
@@ -172,6 +174,7 @@ effective-pancake/
 │   │   ├── add-audio.js                               音轨合成
 │   │   ├── scene-test.html                            最小样例
 │   │   └── package.json                               依赖声明
+│   ├── dsh-mobile-issue-150-原文.md                    (8.7) 📄 提交给 dsh-mobile 的 issue 原文
 │   └── games/
 │       ├── README.md                                  游戏说明
 │       ├── guess-the-number.html                      (7.3) 猜数字双击版
