@@ -8,6 +8,16 @@ url: "https://ann-luo.github.io"
 # URL 不含 categories：否则改分类名 = 改 URL
 permalink: /:year/:month/:day/:title:output_ext
 
+# ⚠️ 必须开：Jekyll 默认 future: false 会「跳过」date 晚于构建时间的文章。
+# 当天凌晨发文章时，文章日期（当天中午）还在未来 → 文章被跳过 →
+# index.md 里指向它的 {% post_url %} 解析失败 → 整个构建挂掉（exit code 1，日志里只说一行错）。
+# 这个坑踩过两次（2026-10-02、2026-10-03），开 future 一劳永逸。
+future: true
+
+# ⚠️ 时区也要显式设成北京，否则 URL 里的日期会被按 UTC 算：
+# 「2026-10-03 01:00 +0800」会被算成 UTC 的 10-02，URL 变成 /2026/10/02/。
+timezone: Asia/Shanghai
+
 # 注意：显式设置 exclude 会替换 Jekyll 的默认排除项，所以默认项也要列全
 exclude:
   - .sass-cache/
