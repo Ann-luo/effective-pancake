@@ -178,6 +178,21 @@ README 是给 GitHub 看的，**不用** `post_url`，保持相对路径。
 python C:\tmp\precheck.py
 ```
 
+> ⚠️ **改 `skills/` 下的文件前后，务必想一遍 front matter**
+>
+> `skills/` 里同时存在两类文件，它们的 front matter 要求**相反**：
+>
+> | 文件 | front matter | 原因 |
+> |---|---|---|
+> | **本地** `~/.agents/skills/publish-blog/SKILL.md` | ✅ **必须有** | DSH 靠它识别 skill |
+> | **仓库** `skills/publish-blog/SKILL-DSH.md` | ❌ **必须没有** | 有就被 Jekyll 当页面渲染，正文里的 `{% post_url %}` 被真执行 → **构建失败** |
+>
+> **所以「本地 → 仓库」这个复制动作，永远要跟一步删 front matter。**
+> 这一步漏过两次（第二次是本地覆盖仓库时又带回去的），别再漏第三次。
+>
+> 判据：仓库那份的**首行不能是 `---`**。
+> `precheck.py` 已经加了这条检查，会直接报错拦住。
+
 `precheck.py` 的内容：
 
 ```python
