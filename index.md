@@ -58,6 +58,7 @@ title: effective-pancake
 - 8.2 [2026-10-02 折腾总览：一天给 DSH 加了四种能力]({% post_url 2026-10-02-今日折腾总览 %})
 - 8.3 [白嫖党狂喜：给 DSH 加上生图和生视频能力（全免费）]({% post_url 2026-10-02-DSH全模态改造-生图生视频踩坑记 %})
 - 8.4 [用代码而不是 AI 生成视频：一支 60 秒宇宙短片的完整做法]({% post_url 2026-10-02-用代码生成60秒宇宙短片 %})
+- 　└ 🎬 [成片：宇宙短片 60s 1080p](/effective-pancake/assets/videos/cosmos-60s-1080p.mp4) · [源码](/effective-pancake/assets/cosmos-video/README.md)
 - 8.5 [踩坑记：那些给我「假答案」的工具]({% post_url 2026-10-02-踩坑记-给我假答案的工具 %})
 - 8.6 [给 AI 装上「搜索引擎」和「眼睛」：AnySearch + 视频理解实测]({% post_url 2026-10-02-AI的搜索引擎与眼睛-AnySearch与视频理解 %})
 

@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>html,body{margin:0;padding:0;background:#000;overflow:hidden}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+/* =========================================================
+   宇宙短片 · 纯代码逐帧渲染
+   7 个镜头，中英双语字幕，确定性渲染（同一帧永远同一画面）
+   ========================================================= */
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d', { alpha: false });
+const W = canvas.width, H = canvas.height;
+
+const P = new URLSearchParams(location.search);
+const FPS  = parseFloat(P.get('fps') || '30');
+const DUR  = parseFloat(P.get('dur') || '60');
+const TOTAL = Math.round(FPS * DUR);
+
+/* ---------- 工具 ---------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const clamp01 = t => t<0?0:t>1?1:t;
+const seg = (t,a,b) => clamp01((t-a)/(b-a));
+const easeOut = t => 1-Math.pow(1-t,3);
+const easeInOut = t => t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+const lerp = (a,b,t) => a+(b-a)*t;
+const F = {
+  zh: '"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif',
+  en: '"Segoe UI","Helvetica Neue",Arial,sans-serif',
+};
+
+/* ---------- 星空（确定性） ---------- */
+const rnd = mulberry32(20261002);
+const STARS = [];
+for (let i=0;i<520;i++){
+  STARS.push({x:rnd()*W, y:rnd()*H, r:0.5+rnd()*1.8, base:0.2+rnd()*0.6,
+              ph:rnd()*Math.PI*2, sp:0.3+rnd()*1.8});
+}
+function drawStars(t, alpha){
+  for (const s of STARS){
+    const tw = 0.7+0.3*Math.sin(t*s.sp*Math.PI*2+s.ph);
+    ctx.globalAlpha = s.base*tw*(alpha==null?1:alpha);
+    ctx.fillStyle = '#cfe0ff';
+    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+function bgDeep(tint){
+  const g = ctx.createLinearGradient(0,0,W*0.35,H);
+  g.addColorStop(0,   tint||'rgb(6,7,18)');
+  g.addColorStop(0.55,tint? shade(tint,1.4) : 'rgb(10,8,26)');
+  g.addColorStop(1,   'rgb(3,4,11)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+}
+function shade(rgb, mul){
+  const m = rgb.match(/(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+  if(!m) return rgb;
+  return `rgb(${Math.min(255,m[1]*mul|0)},${Math.min(255,m[2]*mul|0)},${Math.min(255,m[3]*mul|0)})`;
+}
+function vignette(strength){
+  const s = strength==null?0.75:strength;
+  const g = ctx.createRadialGradient(W/2,H/2,H*0.2,W/2,H/2,H*0.98);
+  g.addColorStop(0,'rgba(0,0,0,0)');
+  g.addColorStop(1,`rgba(0,0,0,${s})`);
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+}
+function glowText(text,x,y,size,alpha,opts){
+  const o = opts||{};
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = o.color||'#ffffff';
+  ctx.font = `${o.weight||700} ${size}px ${o.font||F.zh}`;
+  ctx.textAlign = o.align||'center';
+  ctx.textBaseline = 'middle';
+  if(o.glow!==0){
+    ctx.shadowColor = o.glowColor||'rgba(205,215,255,0.8)';
+    ctx.shadowBlur = size*(o.glow||0.35);
+  }
+  ctx.fillText(text,x,y);
+  ctx.restore();
+}
+
+/* ---------- 分镜表 ---------- */
+const SHOTS = [
+  {name:'pale-blue-dot', start:0,  dur:8.5},
+  {name:'nucleosynthesis',start:8.5, dur:8.5},
+  {name:'galaxy',        start:17,  dur:8.5},
+  {name:'light-travel',  start:25.5,dur:8.5},
+  {name:'blackhole',     start:34,  dur:9.5},
+  {name:'constellation', start:43.5,dur:8.5},
+  {name:'outro',         start:52,  dur:8},
+];
+function currentShot(t){ for(const s of SHOTS) if(t>=s.start && t<s.start+s.dur) return s; return SHOTS[SHOTS.length-1]; }
+// 转场：每镜 0.7s 淡入、最后 0.6s 淡出
+function shotAlpha(t, s){
+  const a = seg(t, s.start, s.start+0.7);
+  const outStart = s.start+s.dur-0.6;
+  const b = t>outStart ? 1-seg(t, outStart, s.start+s.dur) : 1;
+  return Math.min(a,b);
+}
+
+/* ---------- 字幕 ---------- */
+const LINES = [
+  {t0:0.6,  t1:8.0,  zh:'从 60 亿公里外回望，地球只是一个光点', en:'Seen from 6 billion km away, Earth is only a pale blue dot', label:'PALE BLUE DOT 暗淡蓝点'},
+  {t0:9.1,  t1:16.5, zh:'我们体内的碳，诞生于古老恒星的核心',   en:'The carbon in us was forged in the hearts of ancient stars', label:'NUCLEOSYNTHESIS 核合成'},
+  {t0:17.6, t1:25.0, zh:'一个星系，约两千亿个太阳',             en:'One galaxy, some two hundred billion suns', label:'MILKY WAY 银河系'},
+  {t0:26.1, t1:33.5, zh:'望得越远，看见的越是过去',             en:'The farther we look, the further back in time we see', label:'LIGHT TRAVEL TIME 光行时'},
+  {t0:34.6, t1:43.0, zh:'引力弯折光线，时间也随之放缓',         en:'Gravity bends light, and time itself slows', label:'GRAVITATIONAL LENSING 引力透镜'},
+  {t0:44.1, t1:51.5, zh:'我们在群星之间连线，寻找意义',         en:'We draw lines between the stars, searching for meaning', label:'CONSTELLATION 星座'},
+];
+function drawSubs(t){
+  for (const L of LINES){
+    if (t<L.t0 || t>L.t1) continue;
+    const a = Math.min(seg(t,L.t0,L.t0+0.6), 1-seg(t,L.t1-0.6,L.t1));
+    const y = H*0.845;
+    // 中文主字幕
+    glowText(L.zh, W/2, y, 58, a, {weight:600});
+    // 英文副字幕
+    glowText(L.en, W/2, y+64, 30, a*0.72, {weight:400, font:F.en, color:'#c9d4f2', glow:0.18});
+    // 科学标注（左下角）
+    ctx.save();
+    ctx.globalAlpha = a*0.65;
+    ctx.fillStyle = '#9fb0dd';
+    ctx.font = `400 26px ${F.en}`;
+    ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+    ctx.fillText(L.label, 78, H-64);
+    ctx.restore();
+    break;
+  }
+}
+
+/* =========================================================
+   镜头 1 · 暗淡蓝点
+   ========================================================= */
+function shot_blueDot(t, local, a){
+  bgDeep('rgb(7,8,20)');
+  drawStars(t, 0.9);
+  ctx.globalAlpha = a;
+
+  const cx = W/2, cy = H*0.47;
+  // 光点呼吸
+  const pulse = 1 + 0.18*Math.sin(t*1.6);
+  const grow = easeOut(seg(local,0.3,2.2));
+
+  // 外层柔光
+  const halo = ctx.createRadialGradient(cx,cy,0,cx,cy,190*grow*pulse);
+  halo.addColorStop(0,'rgba(150,190,255,0.55)');
+  halo.addColorStop(0.25,'rgba(110,150,230,0.20)');
+  halo.addColorStop(1,'rgba(80,120,200,0)');
+  ctx.fillStyle=halo;
+  ctx.beginPath(); ctx.arc(cx,cy,190*grow*pulse,0,Math.PI*2); ctx.fill();
+
+  // 核心光点
+  ctx.fillStyle='#eaf2ff';
+  ctx.shadowColor='rgba(190,215,255,0.95)';
+  ctx.shadowBlur=45;
+  ctx.beginPath(); ctx.arc(cx,cy,4.6*grow*pulse,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur=0;
+
+  // 标注线（从点引出到右侧）
+  const la = seg(local,1.6,2.8);
+  if (la>0){
+    ctx.save();
+    ctx.globalAlpha = a*la*0.85;
+    ctx.strokeStyle='rgba(160,185,240,0.75)';
+    ctx.lineWidth=1.6;
+    const x1=cx+46*grow, y1=cy-6, x2=cx+430, y2=cy-150;
+    ctx.beginPath();
+    ctx.moveTo(cx+8,cy); ctx.lineTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x2+250,y2);
+    ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx,cy,0,0,0);
+    ctx.globalAlpha=a*la;
+    ctx.fillStyle='#dbe6ff';
+    ctx.font=`600 34px ${F.en}`;
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText('PALE BLUE DOT', x2+18, y2-20);
+    ctx.font=`400 26px ${F.zh}`;
+    ctx.fillStyle='#a8b8e0';
+    ctx.fillText('暗淡蓝点', x2+18, y2+18);
+    ctx.restore();
+  }
+
+  // 距离标尺
+  const ra = seg(local,3.4,4.6);
+  if (ra>0){
+    ctx.save();
+    ctx.globalAlpha=a*ra*0.5;
+    ctx.strokeStyle='rgba(150,170,220,0.6)';
+    ctx.lineWidth=1.2;
+    ctx.setLineDash([8,10]);
+    const y=H*0.70;
+    ctx.beginPath(); ctx.moveTo(W*0.18,y); ctx.lineTo(W*0.82,y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#93a5cf';
+    ctx.font=`400 26px ${F.en}`;
+    ctx.textAlign='center';
+    ctx.fillText('6,000,000,000 km', W*0.5, y-22);
+    ctx.restore();
+  }
+  ctx.globalAlpha=1;
+}
+
+/* =========================================================
+   镜头 2 · 核合成
+   ========================================================= */
+const NUC_P = [];
+{
+  const r2 = mulberry32(777);
+  for (let i=0;i<260;i++){
+    const ang = r2()*Math.PI*2;
+    const rad = 60 + r2()*560;
+    NUC_P.push({ang, rad, sp:0.05+r2()*0.22, size:1+r2()*3.2, warm:r2()});
+  }
+}
+function shot_nucleo(t, local, a){
+  bgDeep('rgb(14,6,8)');
+  drawStars(t, 0.45);
+  ctx.globalAlpha=a;
+
+  const cx=W/2, cy=H*0.47;
+  const core = easeOut(seg(local,0,2.0));
+
+  // 核心球
+  const R = 120*core*(1+0.04*Math.sin(t*3));
+  const cg = ctx.createRadialGradient(cx,cy,0,cx,cy,R*2.4);
+  cg.addColorStop(0,'rgba(255,246,220,0.98)');
+  cg.addColorStop(0.16,'rgba(255,205,120,0.85)');
+  cg.addColorStop(0.42,'rgba(240,130,60,0.35)');
+  cg.addColorStop(0.75,'rgba(150,50,40,0.12)');
+  cg.addColorStop(1,'rgba(60,10,20,0)');
+  ctx.fillStyle=cg;
+  ctx.beginPath(); ctx.arc(cx,cy,R*2.4,0,Math.PI*2); ctx.fill();
+
+  // 粒子环绕（表示核聚变）
+  ctx.globalCompositeOperation='lighter';
+  for (const p of NUC_P){
+    const ang = p.ang + t*p.sp;
+    const wob = 1+0.06*Math.sin(t*1.8+p.ang*3);
+    const x = cx + Math.cos(ang)*p.rad*wob*core;
+    const y = cy + Math.sin(ang)*p.rad*0.62*wob*core;
+    const al = (0.25+0.55*Math.abs(Math.sin(t*1.1+p.ang)))*a;
+    ctx.globalAlpha = al;
+    ctx.fillStyle = p.warm>0.5 ? '#ffd79a' : '#9fd0ff';
+    ctx.beginPath(); ctx.arc(x,y,p.size,0,Math.PI*2); ctx.fill();
+  }
+  ctx.globalCompositeOperation='source-over';
+  ctx.globalAlpha=a;
+
+  // 碳原子标记：飘出的六边形
+  const ha = seg(local,3.2,5.2);
+  if (ha>0){
+    for (let i=0;i<3;i++){
+      const p = easeOut(clamp01(ha - i*0.18));
+      const hx = cx + (i-1)*330;
+      const hy = cy + 250 - p*90;
+      ctx.save();
+      ctx.globalAlpha = a*p*0.9;
+      ctx.strokeStyle='rgba(180,215,255,0.85)';
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      for (let k=0;k<6;k++){
+        const ang = Math.PI/6 + k*Math.PI/3;
+        const x=hx+Math.cos(ang)*30, y=hy+Math.sin(ang)*30;
+        k?ctx.lineTo(x,y):ctx.moveTo(x,y);
+      }
+      ctx.closePath(); ctx.stroke();
+      ctx.fillStyle='rgba(200,225,255,0.95)';
+      ctx.font=`600 26px ${F.en}`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('C', hx, hy+1);
+      ctx.restore();
+    }
+  }
+  ctx.globalAlpha=1;
+}
+
+/* =========================================================
+   镜头 3 · 银河系
+   ========================================================= */
+const GAL = [];
+{
+  const r3=mulberry32(31337);
+  for (let i=0;i<2600;i++){
+    const arm = i%2;
+    const rr = Math.pow(r3(),0.62);
+    const spread = (1-rr)*0.9+0.12;
+    const ang = rr*3.4 + arm*Math.PI + (r3()-0.5)*spread;
+    const rad = 90 + rr*540;
+    GAL.push({rad, ang, size:0.5+r3()*1.9, hue:r3(), bright:0.35+r3()*0.65});
+  }
+}
+function shot_galaxy(t, local, a){
+  bgDeep('rgb(8,7,22)');
+  drawStars(t, 0.5);
+  ctx.globalAlpha=a;
+
+  const cx=W/2, cy=H*0.47;
+  const rot = t*0.055;
+  const grow = easeOut(seg(local,0,2.6));
+  const tilt = 0.36;
+
+  ctx.globalCompositeOperation='lighter';
+  // 核心光晕
+  const cg = ctx.createRadialGradient(cx,cy,0,cx,cy,260*grow);
+  cg.addColorStop(0,'rgba(255,244,215,0.9)');
+  cg.addColorStop(0.3,'rgba(235,205,150,0.35)');
+  cg.addColorStop(1,'rgba(120,110,200,0)');
+  ctx.fillStyle=cg;
+  ctx.beginPath(); ctx.arc(cx,cy,260*grow,0,Math.PI*2); ctx.fill();
+
+  // 旋臂星点
+  for (const s of GAL){
+    const ang = s.ang + rot;
+    const x = cx + Math.cos(ang)*s.rad*grow;
+    const y = cy + Math.sin(ang)*s.rad*tilt*grow;
+    ctx.globalAlpha = a*s.bright*0.85;
+    ctx.fillStyle = s.hue>0.72 ? '#bcd4ff' : s.hue>0.4 ? '#fff2cf' : '#ffd9a8';
+    ctx.beginPath(); ctx.arc(x,y,s.size,0,Math.PI*2); ctx.fill();
+  }
+  ctx.globalCompositeOperation='source-over';
+  ctx.globalAlpha=a;
+
+  // 比例标注
+  const ra = seg(local,3.6,5.0);
+  if (ra>0){
+    ctx.save();
+    ctx.globalAlpha=a*ra*0.8;
+    ctx.strokeStyle='rgba(150,170,225,0.7)';
+    ctx.lineWidth=1.3;
+    const y0=H*0.80, x0=W*0.60;
+    ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0+320,y0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x0,y0-7); ctx.lineTo(x0,y0+7);
+    ctx.moveTo(x0+320,y0-7); ctx.lineTo(x0+320,y0+7); ctx.stroke();
+    ctx.fillStyle='#a9b9e2';
+    ctx.font=`400 26px ${F.en}`;
+    ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+    ctx.fillText('≈ 100,000 light-years', x0+160, y0-20);
+    ctx.restore();
+  }
+  ctx.globalAlpha=1;
+}
+
+/* =========================================================
+   镜头 4 · 光行时间
+   ========================================================= */
+const FAR = [];
+{
+  const r4=mulberry32(4242);
+  for (let i=0;i<44;i++){
+    FAR.push({x:r4(), y:r4(), r:4+r4()*16, hue:r4(), tw:r4()});
+  }
+}
+function shot_lightTravel(t, local, a){
+  bgDeep('rgb(5,6,16)');
+  drawStars(t, 0.75);
+  ctx.globalAlpha=a;
+
+  // 星系由近及远：逐步出现并缩小
+  const n = FAR.length;
+  for (let i=0;i<n;i++){
+    const f = FAR[i];
+    const appear = seg(local, 0.15 + i*0.075, 1.0 + i*0.075);
+    if (appear<=0) continue;
+    const e = easeOut(appear);
+    const depth = i/(n-1);                    // 0 近 → 1 远
+    const scl = lerp(1.0, 0.16, depth);
+    const x = f.x*W, y = f.y*H*0.78 + H*0.08;
+    const rad = f.r*scl*e;
+    const al = e*(0.85-depth*0.45);
+
+    // 星系（简化：椭圆模糊光斑 + 核心）
+    const g = ctx.createRadialGradient(x,y,0,x,y,rad*3.1);
+    const tint = f.hue>0.66 ? '160,190,255' : f.hue>0.33 ? '255,238,205' : '220,180,255';
+    g.addColorStop(0,`rgba(${tint},${al*0.95})`);
+    g.addColorStop(0.32,`rgba(${tint},${al*0.28})`);
+    g.addColorStop(1,`rgba(${tint},0)`);
+    ctx.fillStyle=g;
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.scale(1, 0.55+0.25*Math.sin(f.tw*6));
+    ctx.beginPath(); ctx.arc(0,0,rad*3.1,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  // 时间轴：过去 ← 现在
+  const ta = seg(local,3.8,5.4);
+  if (ta>0){
+    ctx.save();
+    ctx.globalAlpha=a*ta*0.85;
+    const y=H*0.79, x0=W*0.16, x1=W*0.84;
+    const g=ctx.createLinearGradient(x0,0,x1,0);
+    g.addColorStop(0,'rgba(120,150,230,0.15)');
+    g.addColorStop(1,'rgba(230,240,255,0.95)');
+    ctx.strokeStyle=g; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x1,y); ctx.stroke();
+    ctx.fillStyle='#c3d0f0';
+    ctx.font=`400 25px ${F.en}`;
+    ctx.textAlign='left';  ctx.textBaseline='alphabetic';
+    ctx.fillText('PAST 过去', x0, y+38);
+    ctx.textAlign='right';
+    ctx.fillText('NOW 现在', x1, y+38);
+    ctx.restore();
+  }
+  ctx.globalAlpha=1;
+}
+
+/* =========================================================
+   镜头 5 · 黑洞引力透镜（真实光线偏折，不是画圈）
+   原理：背景每颗星按 θ_out = r + Re²/r 偏折，
+        靠近爱因斯坦半径的光被强烈弯折并汇聚 → 星弧 + 爱因斯坦环
+   ========================================================= */
+const LENS_STARS = [];
+{
+  const r5=mulberry32(5150);
+  for (let i=0;i<1200;i++){
+    // 撒在比画面更大的范围，偏折后仍有足够光源
+    LENS_STARS.push({
+      x:(r5()-0.5)*W*2.6, y:(r5()-0.5)*H*2.6,
+      size:0.6+r5()*2.0, bright:0.30+r5()*0.65,
+      hue:r5(), ph:r5()*6.28, sp:0.4+r5()*1.6
+    });
+  }
+}
+const DISK = [];
+{
+  const r5b=mulberry32(909);
+  for (let i=0;i<1500;i++){
+    // 半径带宽度：让盘有"面"而不是一条线；内密外疏
+    const u = Math.pow(r5b(), 0.55);
+    const rIn = 150, rOut = 760;
+    DISK.push({
+      rad: rIn + u*(rOut-rIn),
+      ang: r5b()*Math.PI*2,
+      size: 0.5 + r5b()*1.9,
+      v: 0.45 + r5b()*1.15,          // 角速度（内圈更快，靠下面按半径修正）
+      h: r5b(),
+    });
+  }
+}
+function shot_blackhole(t, local, a){
+  bgDeep('rgb(4,5,13)');
+  ctx.globalAlpha=a;
+
+  const cx=W/2, cy=H*0.46;
+  const grow = easeOut(seg(local,0,2.6));
+  const TILT = 0.52;                 // 盘面倾角（越大盘越扁、越有立体感）
+  const Rs   = 148;                  // 视界半径
+  const Re   = 200;                  // 爱因斯坦半径（>视界，环才可见）
+
+  /* ---- 1) 被透镜弯曲的背景星空 ---- */
+  ctx.globalCompositeOperation='lighter';
+  for (const s of LENS_STARS){
+    const dx = s.x, dy = s.y;
+    const r  = Math.hypot(dx, dy);
+    if (r < 1) continue;
+    const bend = (Re*Re)/r;                  // 偏折量（越小弯得越狠）
+    const k = (r + bend*grow) / r;
+    const x = cx + dx*k, y = cy + dy*k;
+    if (x<-80||x>W+80||y<-80||y>H+80) continue;
+
+    const tw = 0.72+0.28*Math.sin(t*s.sp+s.ph);
+    // 靠近爱因斯坦半径处光被汇聚 → 显著增亮
+    const near = Math.exp(-Math.abs(r-Re*grow)/(Re*0.40));
+    const al = s.bright*tw*(0.26+1.05*near)*grow;
+    if (al<=0.02) continue;
+
+    // 切向拉伸成弧（这是"被拉弯"的视觉关键）
+    const ang = Math.atan2(dy,dx);
+    const stretch = 1 + 4.2*near;
+    ctx.globalAlpha = Math.min(1, al);
+    ctx.fillStyle = s.hue>0.72 ? '#cfe2ff' : s.hue>0.36 ? '#fff0d4' : '#ffd9b0';
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(ang);
+    ctx.beginPath();
+    ctx.ellipse(0,0, s.size*stretch, s.size*0.78, 0,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /* ---- 2) 吸积盘（开普勒转动：内快外慢；远端绕到背后）---- */
+  for (const d of DISK){
+    // 角速度 ∝ r^-1.5
+    const omega = d.v * 320 / Math.pow(d.rad, 1.5);
+    const ang = d.ang + t*omega*22;
+    const rr  = d.rad*grow;
+    const x = cx + Math.cos(ang)*rr;
+    const y = cy + Math.sin(ang)*rr*TILT;
+    const behind = Math.sin(ang) < 0;
+    const inner = 1 - Math.min(1,(d.rad-150)/610);   // 1=最内 0=最外
+    const al = a*(behind?0.26:0.95)*(0.30+0.70*inner);
+    ctx.globalAlpha = Math.min(1,al);
+    const heat = inner*0.80 + d.h*0.20;
+    ctx.fillStyle = heat>0.76 ? '#f2f7ff' : heat>0.50 ? '#ffdca6' : heat>0.28 ? '#ff9f4e' : '#c2421a';
+    ctx.beginPath(); ctx.arc(x,y,d.size*(0.7+1.0*inner),0,Math.PI*2); ctx.fill();
+  }
+
+  /* ---- 3) 光子环（叠在爱因斯坦环上）---- */
+  ctx.globalAlpha = a*grow;
+  ctx.strokeStyle='rgba(255,226,182,0.95)';
+  ctx.lineWidth = 4.4*grow;
+  ctx.shadowColor='rgba(255,205,140,0.95)';
+  ctx.shadowBlur = 36*grow;
+  ctx.beginPath(); ctx.arc(cx,cy,Re*grow,0,Math.PI*2); ctx.stroke();
+  ctx.shadowBlur=0;
+
+  /* ---- 4) 事件视界（纯黑，硬边压住中心）---- */
+  ctx.globalCompositeOperation='source-over';
+  ctx.globalAlpha = a;
+  const eh = Rs*grow;
+  ctx.fillStyle='#000';
+  ctx.beginPath(); ctx.arc(cx,cy,eh,0,Math.PI*2); ctx.fill();
+  const hg = ctx.createRadialGradient(cx,cy,eh*0.94,cx,cy,eh*1.10);
+  hg.addColorStop(0,'rgba(0,0,0,0.95)');
+  hg.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=hg;
+  ctx.beginPath(); ctx.arc(cx,cy,eh*1.10,0,Math.PI*2); ctx.fill();
+
+  /* ---- 5) 标注 ---- */
+  const la = seg(local,4.2,5.8);
+  if (la>0){
+    ctx.save();
+    ctx.globalAlpha=a*la*0.88;
+    ctx.lineWidth=1.4;
+    // 事件视界
+    ctx.strokeStyle='rgba(170,195,245,0.75)';
+    const x1=cx+Re*0.70, y1=cy-Re*0.70, x2=cx+340, y2=cy-268;
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x2+310,y2); ctx.stroke();
+    ctx.fillStyle='#d6e1ff';
+    ctx.font=`600 28px ${F.en}`;
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText('EVENT HORIZON', x2+16, y2-16);
+    ctx.font=`400 24px ${F.zh}`;
+    ctx.fillStyle='#a5b5dd';
+    ctx.fillText('事件视界', x2+16, y2+18);
+    // 爱因斯坦环
+    ctx.strokeStyle='rgba(170,195,245,0.6)';
+    const x3=cx-Re*0.72, y3=cy+Re*0.72, x4=cx-350, y4=cy+296;
+    ctx.beginPath(); ctx.moveTo(x3,y3); ctx.lineTo(x4,y4); ctx.lineTo(x4-300,y4); ctx.stroke();
+    ctx.fillStyle='#c6d4f5';
+    ctx.font=`600 26px ${F.en}`;
+    ctx.textAlign='right';
+    ctx.fillText('EINSTEIN RING', x4-16, y4-14);
+    ctx.font=`400 23px ${F.zh}`;
+    ctx.fillStyle='#9fafd8';
+    ctx.fillText('爱因斯坦环', x4-16, y4+18);
+    ctx.restore();
+    ctx.globalAlpha=a;
+  }
+  ctx.globalAlpha=1;
+}
+
+/* =========================================================
+   镜头 6 · 星座连线
+   ========================================================= */
+const CONST_PTS = (()=>{
+  const r6=mulberry32(60606);
+  const pts=[];
+  // 生成一条"人形/星座"感的点列
+  const base = [
+    [0.50,0.20],[0.42,0.30],[0.58,0.30],[0.36,0.42],[0.64,0.42],
+    [0.50,0.44],[0.30,0.56],[0.70,0.56],[0.38,0.66],[0.62,0.66],
+    [0.44,0.78],[0.56,0.78],
+  ];
+  for (const [bx,by] of base){
+    pts.push({x:(bx+(r6()-0.5)*0.05)*W, y:(by+(r6()-0.5)*0.05)*H*0.72+H*0.16, ph:r6()*6.28, r:2.6+r6()*2.4});
+  }
+  return pts;
+})();
+const CONST_EDGES = [[0,1],[0,2],[1,3],[2,4],[1,5],[2,5],[3,6],[4,7],[5,6],[5,7],[6,8],[7,9],[8,10],[9,11],[10,11]];
+function shot_constellation(t, local, a){
+  bgDeep('rgb(7,8,19)');
+  drawStars(t, 0.85);
+  ctx.globalAlpha=a;
+
+  // 星点依次亮起
+  const lit = CONST_PTS.map((p,i)=> easeOut(seg(local, 0.5+i*0.32, 1.5+i*0.32)));
+
+  // 连线
+  ctx.globalCompositeOperation='lighter';
+  ctx.lineWidth=1.7;
+  for (let e=0;e<CONST_EDGES.length;e++){
+    const [i,j] = CONST_EDGES[e];
+    const ea = Math.min(lit[i],lit[j]) * easeOut(seg(local, 3.0+e*0.28, 3.9+e*0.28));
+    if (ea<=0) continue;
+    ctx.globalAlpha = a*ea*0.8;
+    const g = ctx.createLinearGradient(CONST_PTS[i].x,CONST_PTS[i].y,CONST_PTS[j].x,CONST_PTS[j].y);
+    g.addColorStop(0,'rgba(150,200,255,0.9)');
+    g.addColorStop(1,'rgba(200,225,255,0.95)');
+    ctx.strokeStyle=g;
+    ctx.beginPath();
+    ctx.moveTo(CONST_PTS[i].x,CONST_PTS[i].y);
+    ctx.lineTo(CONST_PTS[j].x,CONST_PTS[j].y);
+    ctx.stroke();
+  }
+
+  // 星点本体
+  for (let i=0;i<CONST_PTS.length;i++){
+    const p=CONST_PTS[i], al=lit[i];
+    if(al<=0) continue;
+    const tw = 0.75+0.25*Math.sin(t*2+i);
+    ctx.globalAlpha = a*al*tw;
+    ctx.fillStyle='#ffffff';
+    ctx.shadowColor='rgba(190,220,255,0.95)';
+    ctx.shadowBlur=22*al;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r*(0.6+0.4*al),0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+  }
+  ctx.globalCompositeOperation='source-over';
+  ctx.globalAlpha=1;
+}
+
+/* =========================================================
+   镜头 7 · 结尾
+   ========================================================= */
+function shot_outro(t, local, a){
+  bgDeep('rgb(5,6,15)');
+  drawStars(t, 0.8);
+  ctx.globalAlpha=a;
+
+  const cx=W/2, cy=H*0.46;
+  // 汇聚的光点
+  const conv = easeOut(seg(local,0,2.2));
+  for (let i=0;i<70;i++){
+    const ang = (i/70)*Math.PI*2 + t*0.25;
+    const r0 = lerp(760, 0, conv);
+    const x = cx + Math.cos(ang)*r0;
+    const y = cy + Math.sin(ang)*r0*0.6;
+    ctx.globalAlpha = a*(0.15+0.55*(1-conv)*Math.abs(Math.sin(t*2+i)));
+    ctx.fillStyle='#cfe0ff';
+    ctx.beginPath(); ctx.arc(x,y,1.8,0,Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha=a;
+
+  // 中心闪光
+  const fl = seg(local,1.5,2.6);
+  if (fl>0){
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,320*fl);
+    g.addColorStop(0,`rgba(220,235,255,${0.75*(1-fl*0.5)})`);
+    g.addColorStop(0.4,`rgba(140,180,255,${0.22*(1-fl)})`);
+    g.addColorStop(1,'rgba(100,140,220,0)');
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(cx,cy,320*fl,0,Math.PI*2); ctx.fill();
+  }
+
+  // 标识 + 标语
+  const ta = easeOut(seg(local,2.4,4.0));
+  if (ta>0){
+    glowText('DSH', cx, cy-16, 120, a*ta, {weight:700, font:F.en, glow:0.4});
+    glowText('DeepSeek Harness', cx, cy+72, 34, a*ta*0.8, {weight:400, font:F.en, color:'#c5d2f0', glow:0.2});
+  }
+  const sa = easeOut(seg(local,4.0,5.4));
+  if (sa>0){
+    glowText('我们都是星尘，来自宇宙', cx, H*0.775, 52, a*sa, {weight:600});
+    glowText('We are all made of stardust, born of the universe', cx, H*0.775+60, 27, a*sa*0.75, {weight:400, font:F.en, color:'#c2cff0', glow:0.18});
+  }
+  ctx.globalAlpha=1;
+}
+
+/* =========================================================
+   总渲染入口
+   ========================================================= */
+const SHOT_FN = {
+  'pale-blue-dot': shot_blueDot,
+  'nucleosynthesis': shot_nucleo,
+  'galaxy': shot_galaxy,
+  'light-travel': shot_lightTravel,
+  'blackhole': shot_blackhole,
+  'constellation': shot_constellation,
+  'outro': shot_outro,
+};
+
+window.renderFrame = function(frame){
+  const t = frame / FPS;
+  const s = currentShot(t);
+  const local = t - s.start;
+  const a = shotAlpha(t, s);
+  SHOT_FN[s.name](t, local, a);
+  drawSubs(t);
+  vignette(0.72);
+};
+
+window.TOTAL_FRAMES = TOTAL;
+window.READY = true;
+</script>
+</body>
+</html>
