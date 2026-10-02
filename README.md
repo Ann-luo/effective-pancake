@@ -97,7 +97,7 @@
 |---|------|------|
 | 9.1 | [我盲解了一个未知的文件格式——三次失败后才找对路](./_posts/2026-10-02-盲解未知文件格式.md) | 未知二进制格式怎么下手：数特征定性、二分测边界、三次失败（第二次比第一次更差）的教训、验收标准要定死 |
 | 9.2 | [我用 TypeScript 把《星夜》拆成几万笔立体笔触——最后撞上一堵 3 秒/帧的墙](./_posts/2026-10-03-星夜3D-从梵高油画到可穿行的笔触空间.md) | 结构张量把油画拆成可穿行的笔触海；无头 Chrome 采集固定 3 秒/帧（与分辨率无关）；用 `performance.now()` 测 GPU 耗时的陷阱 |
-| 📦 | 　└ [Skill 资源包：export-dsh-chat](./skills/export-dsh-chat/SKILL.md) | DSH 会话导出工具 + 多帧 zstd 解析算法，含 `export-sessions.js` |
+| 📦 | 　└ [Skill 资源包：export-dsh-chat](./skills/export-dsh-chat/SKILL.md) | **读 / 导出** DSH 会话 + 多帧 zstd 解析算法，含 `read-session.js`（直接读、可搜索）与 `export-sessions.js`（落盘） |
 
 ---
 
@@ -139,7 +139,7 @@ Copy-Item -Recurse skills\export-dsh-chat $env:USERPROFILE\.agents\skills\
 | 4.2 | [codex-chat](./skills/codex-chat/SKILL.md) | 通过 CDP 与 OpenAI Codex 桌面客户端通信，对应文章 4.1 | **Claude Code** → `cp -r skills/codex-chat ~/.claude/skills/` |
 | 4.3 | [publish-blog](./skills/publish-blog/SKILL.md) | 一条龙博客发布：写文章 → 更新索引 → 自动推送，对应文章 4.3。**两个平台各一份**：`SKILL.md`（Claude Code / bash）、[`SKILL-DSH.md`](./skills/publish-blog/SKILL-DSH.md)（DSH / PowerShell） | **Claude Code** → `cp -r skills/publish-blog ~/.claude/skills/`<br>**DSH** → `Copy-Item -Recurse skills\publish-blog $env:USERPROFILE\.agents\skills\` |
 | 6.2 | [qq-messenger](./skills/qq-messenger/SKILL.md) | 通过 Codex Computer Use 控制 Windows QQ 发消息，对应文章 6.1 | **Codex** → 放入 Codex 的 skills 目录 |
-| 9.1 | [export-dsh-chat](./skills/export-dsh-chat/SKILL.md) | 导出 DSH 聊天记录为可读 JSONL（含多帧 zstd 解析算法），对应文章 9.1 | **DSH** → `Copy-Item -Recurse skills\export-dsh-chat $env:USERPROFILE\.agents\skills\` |
+| 9.1 | [export-dsh-chat](./skills/export-dsh-chat/SKILL.md) | **读 / 导出** DSH 聊天记录（含多帧 zstd 解析算法）。`read-session.js` 直接在终端读对话、可跨会话搜关键词；`export-sessions.js` 落盘 JSONL，对应文章 9.1 | **DSH** → `Copy-Item -Recurse skills\export-dsh-chat $env:USERPROFILE\.agents\skills\` |
 
 ---
 
@@ -218,7 +218,8 @@ effective-pancake/
 │   │   └── SKILL.md
 │   └── export-dsh-chat/          ← DSH Skill（装到 ~/.agents/skills/）
 │       ├── SKILL.md
-│       └── export-sessions.js
+│       ├── read-session.js       ← 直接读对话（给人看）
+│       └── export-sessions.js    ← 落盘 JSONL（给程序看）
 │
 ├── _config.yml              ← Jekyll 博客配置
 ├── index.md                 ← 博客首页
