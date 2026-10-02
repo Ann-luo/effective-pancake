@@ -58,6 +58,31 @@ tags: [标签1, 标签2]
 - X.Y [附件描述](/effective-pancake/assets/filename.txt)
 ```
 
+#### ⚠️ 但「文章正文里互链」要用完整 URL，不要用 post_url
+
+**踩坑记录（2026-10-02）**：给一篇总览文章写「跳转到其他几篇」的链接时用了 `post_url`，博客上跳转正常，但**用户点 GitHub 上的文件看时是一行红色原文**：
+
+```
+① [白嫖党狂喜：给 DSH 加上生图和生视频能力]({% post_url 2026-10-02-xxx %})
+```
+
+因为 GitHub 的 Markdown 预览**不执行 Liquid**。而博客里其他文章用的章节锚点（`#ch1`）、附件链接在 GitHub 上都是蓝色可点的 —— **一行原文夹在中间，观感上就是"坏了"。**
+
+**所以分两种情况：**
+
+| 位置 | 写法 | 理由 |
+|---|---|---|
+| **index.md 首页导航** | `{% post_url %}` | 只在博客上看，GitHub 不展示这个文件 |
+| **文章正文里互链** | **完整 URL** | GitHub 和博客**两边都要能点** |
+
+正文互链的写法：
+
+```markdown
+### ① [文章标题](https://ann-luo.github.io/effective-pancake/YYYY/MM/DD/文件名.html)
+```
+
+**代价要清楚**：硬编码 URL 意味着以后改 permalink 就得手动修这些链接。但 `_config.yml` 里 permalink 已经显式写死（`/:year/:month/:day/:title:output_ext`），这个风险基本不存在 —— **换来"两边都能点"，值。**
+
 ### 步骤 4：更新 README.md（两处，都要改）
 
 README 是给 GitHub 看的，**不用** `post_url`，保持相对路径。
