@@ -66,6 +66,7 @@ title: effective-pancake
 
 **九、调试与排查方法**
 - 9.1 [我盲解了一个未知的文件格式——三次失败后才找对路]({% post_url 2026-10-02-盲解未知文件格式 %})
+- 　└ 📦 [Skill 资源包：export-dsh-chat](https://github.com/Ann-luo/effective-pancake/blob/main/skills/export-dsh-chat/SKILL.md)（导出的工具本体在同目录 `export-sessions.js`）
 
 ---
 

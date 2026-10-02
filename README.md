@@ -96,6 +96,7 @@
 | # | 文章 | 说明 |
 |---|------|------|
 | 9.1 | [我盲解了一个未知的文件格式——三次失败后才找对路](./_posts/2026-10-02-盲解未知文件格式.md) | 未知二进制格式怎么下手：数特征定性、二分测边界、三次失败（第二次比第一次更差）的教训、验收标准要定死 |
+| 📦 | 　└ [Skill 资源包：export-dsh-chat](./skills/export-dsh-chat/SKILL.md) | DSH 会话导出工具 + 多帧 zstd 解析算法，含 `export-sessions.js` |
 
 ---
 
@@ -122,6 +123,7 @@ cp -r skills/publish-blog ~/.claude/skills/
 | 4.2 | [codex-chat](./skills/codex-chat/SKILL.md) | 通过 CDP 与 OpenAI Codex 桌面客户端通信，对应文章 4.1 | `cp -r skills/codex-chat ~/.claude/skills/` |
 | 4.3 | [publish-blog](./skills/publish-blog/SKILL.md) | 一条龙博客发布：写文章 → 更新索引 → 自动推送，对应文章 4.3 | `cp -r skills/publish-blog ~/.claude/skills/` |
 | 6.2 | [qq-messenger](./skills/qq-messenger/SKILL.md) | 通过 Codex Computer Use 控制 Windows QQ 发消息，对应文章 6.1 | 放入 Codex 的 skills 目录 |
+| 9.1 | [export-dsh-chat](./skills/export-dsh-chat/SKILL.md) | 导出 DSH 聊天记录为可读 JSONL（含多帧 zstd 解析算法），对应文章 9.1 | **DSH Skill** → `Copy-Item -Recurse skills\export-dsh-chat $env:USERPROFILE\.agents\skills\` |
 
 ---
 
@@ -187,15 +189,18 @@ effective-pancake/
 │       ├── guess-the-number.html                      (7.3) 猜数字双击版
 │       └── codex-demo/                                (7.4) 猜数字服务器版
 │
-├── skills/                  ← Claude Code Skill 资源包
+├── skills/                  ← Skill 资源包（Claude Code / DSH / Codex）
 │   ├── codex-chat/
 │   │   ├── SKILL.md
 │   │   └── scripts/
 │   │       └── codex_cdp_helper.js
 │   ├── publish-blog/
 │   │   └── SKILL.md
-│   └── qq-messenger/
-│       └── SKILL.md
+│   ├── qq-messenger/
+│   │   └── SKILL.md
+│   └── export-dsh-chat/          ← DSH Skill（装到 ~/.agents/skills/）
+│       ├── SKILL.md
+│       └── export-sessions.js
 │
 ├── _config.yml              ← Jekyll 博客配置
 ├── index.md                 ← 博客首页
