@@ -32,7 +32,7 @@ git status
 ---
 layout: post
 title: "文章标题"
-date: YYYY-MM-DD 12:00:00 +0800
+date: YYYY-MM-DD HH:MM:SS +0800   # 写真实时间即可；仓库已开 future + 北京时区
 categories: ["Codex & Computer Use"]   # 只能取下方「分类清单」里的值
 tags: [标签1, 标签2]
 ---
@@ -48,7 +48,9 @@ tags: [标签1, 标签2]
 
 1. **正文不要写 H1。** 标题由 `layout: post` 从 front matter 渲染；正文再写 `# 标题` 会重复显示一遍。
 2. **`categories` 必须是 `["..."]` 列表形式**，且只能取固定清单里的值。写成裸字符串（`categories: Claude Code & AI 工具`）会被 Jekyll 按空格拆成多个分类。
-3. **`date` 用 `12:00:00 +0800`**（见下面「未来日期陷阱」）。
+3. **`date` 写真实时间。** 仓库已开 `future: true` + `timezone: Asia/Shanghai`，
+   不用再为绕坑改日期。**写真实时间**才和文件名、URL、页面显示三者一致。
+   （历史约定是统一写 `12:00:00 +0800`，现在写这个也行、写真实凌晨时间也行。）
 
 ### 步骤 3：更新 index.md（首页导航）
 
@@ -115,6 +117,11 @@ README 是给 GitHub 看的，**不用** `post_url`，保持相对路径。
 ```markdown
 | X.Y+1 | 　└ [附件描述](./assets/filename.txt) | 说明 |
 ```
+
+> ⚠️ **`📦 Skill 资源包` 这一行要贴在「它配套的那篇文章」下面**，不是贴在最新一篇下面。
+> 判据：这个 skill 是为哪篇文章做的事（例：`export-dsh-chat` 是 9.1《盲解未知文件格式》的配套工具 → 就贴 9.1 后面）。
+> **`index.md` 和 `README.md` 两处的相对位置必须一致**，别一个贴 9.1、一个贴 9.2。
+> 踩过：2026-10-03 我把它挪到了最新文章（9.2）后面，用户原话是「它应该贴在 9.1 后面」。
 
 #### 4b. 仓库结构图
 
@@ -196,9 +203,13 @@ python C:\tmp\precheck.py
 `precheck.py` 的内容：
 
 ```python
-import io, re, glob, os, sys
+import io, re, glob, os, sys, datetime
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 os.chdir(r'C:\tmp\effective-pancake')
+
+# ⚠️ 实际在用的那份在 C:\tmp\precheck.py（直接跑 `python C:\tmp\precheck.py`）。
+#    这段是它的精简副本，改动记得两边同步 —— 2026-10-03 就出现过
+#    「skill 版缺了未来日期检查、实际版有」的漂移。
 
 posts = {os.path.basename(p)[:-3] for p in glob.glob('_posts/*.md')}
 CANON = {'VS Code & GitHub Copilot', 'Windows 技巧', 'GitHub & 博客搭建',
@@ -244,6 +255,35 @@ for f in ['index.md'] + sorted(glob.glob('_posts/*.md')):
     if re.match(r'^#\s', t[fm.end():].lstrip('\r\n').split('\n')[0]):
         problems.append('%s: 正文有多余 H1' % f)
 
+    # ⚠️ 未来日期陷阱（2026-10-03 真实事故：构建失败、日志无信息）
+    # _config.yml 已设 future: true，所以只在「配置里没开 future」时才报警 ——
+    # 免得像上次那样，脚本把另一个会话带去改文章日期（结果 URL 和文件名对不上）。
+    future_on = False
+    try:
+        cfg = io.open('_config.yml', encoding='utf-8').read()
+        future_on = bool(re.search(r'^\s*future:\s*true\b', cfg, re.M))
+    except Exception:
+        pass
+    dm = re.search(r'^date:\s*(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})\s*([+-]\d{4})?',
+                   fm.group(1), re.M)
+    if dm and not future_on:
+        y, mo, d, hh, mm, ss = (int(x) for x in dm.groups()[:6])
+        off = dm.group(7)
+        try:
+            tz = None
+            if off:
+                sign = 1 if off[0] == '+' else -1
+                tz = datetime.timezone(sign * datetime.timedelta(hours=int(off[1:3]), minutes=int(off[3:5])))
+            post_utc = datetime.datetime(y, mo, d, hh, mm, ss, tzinfo=tz).astimezone(datetime.timezone.utc)
+            now_utc = datetime.datetime.now(datetime.timezone.utc)
+            if post_utc > now_utc:
+                problems.append(
+                    '%s: ⚠ 日期在未来，而 _config.yml 没开 future → Jekyll 会跳过它，'
+                    'index.md 的 post_url 解析不到，整个构建会失败。'
+                    '首选去 _config.yml 加 future: true；实在不想改配置再把日期调到过去' % f)
+        except Exception:
+            pass
+
 # ===== skills/ 专项检查（2026-10-02 真实事故：构建被这个搞挂两次）=====
 # 出事要两个条件同时满足：有 front matter（Jekyll 当页面渲染它）+ 有 {% %}（渲染时真执行）
 #   只有其一都安全：
@@ -255,6 +295,10 @@ for f in sorted(glob.glob('skills/**/*.md',recursive=True)):
     liquid=re.findall(r'\{%\s*(?!raw\b|endraw\b).*?%\}',t)
     if has_fm and liquid:
         problems.append('%s: ⚠ 有 front matter + %d 处 Liquid → Jekyll 会渲染并执行，构建必失败（删 front matter）'%(f,len(liquid)))
+    # 硬闸：DSH 版 skill 从本地 SKILL.md 同步而来，本地那份必须有 front matter、
+    # 仓库这份必须没有。「复制后删 front matter」最容易漏，这里直接钉死（已实测拦截有效）。
+    if f.replace('\\','/').endswith('publish-blog/SKILL-DSH.md') and has_fm:
+        problems.append('%s: ⚠ DSH 版 skill 的仓库副本绝不能有 front matter（本地有、仓库必须没有）'%f)
 
 print('\n'.join('  ' + p for p in problems) if problems else '自检通过 ✓')
 ```
@@ -347,7 +391,15 @@ $u = 'https://api.github.com/repos/Ann-luo/effective-pancake/contents/_posts/202
 - **permalink 已显式设置**为 `/:year/:month/:day/:title:output_ext`，URL 里**不含 categories**。所以改分类名不会改 URL；反过来说，别把 categories 当路径用
 - **`_config.yml` 里有 `exclude`**，其中 `post/` 和 `README.md` 不会被发布。旧文不要往 `post/` 里放
 - **`.gitignore` 已忽略 `_site/`、`.jekyll-cache/`**。本地若装了 Ruby 跑过 `jekyll build`，别把生成目录提交上来
-- **⚠️ Jekyll 未来日期陷阱**：Jekyll 默认 `future: false`，构建时跳过 date 晚于构建时间的文章。GitHub Actions 用 UTC（= CST-8）。所以 `date` 统一用 `12:00:00 +0800`，别用晚上时间
+- **⚠️ Jekyll 未来日期陷阱（已根治，2026-10-03）**：Jekyll 默认 `future: false`，构建时**跳过** date 晚于构建时刻的文章；
+  而 `index.md` 里用 `post_url` 指向它 → 解析不到 → **整个构建 exit 1**（Actions 里只显示一行 "Process completed with exit code 1"，看不出原因）。
+  **本仓库的 `_config.yml` 现在已经写了 `future: true`，这个坑从根上没了。**
+  所以：**文章 date 写真实时间就行**，不必再为了绕坑去改日期（改日期会让 URL、页面显示的日期都和文件名对不上，反而更乱）。
+  **万一 `future: true` 被人删了**，症状就是这个：构建失败、日志无信息、`post_url` 指的是当天新文章。
+- **⚠️ 时区：`_config.yml` 已设 `timezone: Asia/Shanghai`（2026-10-03 加的）**。
+  没设时，URL 里的日期按 **UTC** 算，于是「`2026-10-03 01:00 +0800`」这种**北京时间凌晨**发布的文章，
+  URL 会变成 `/2026/10/02/...`、页面也显示 10月02日 —— 和文件名 `2026-10-03-xxx.md` 对不上，看起来像坏了。
+  > 判据（心里有个数就行）：北京时间 **08:00 之前**的发文，UTC 还停在前一天。设了 `Asia/Shanghai` 就没这问题。
 - **⚠️ Skill 类型不要搞混**：附带 Skill 时先确认是 Claude Code、DSH 还是 Codex 用的。Codex Skill 不要写 `cp -r ... ~/.claude/skills/`
 - **三个文件必须同步**：`_posts/`（front matter）+ `index.md`（导航）+ `README.md`（目录表 + 结构图，两处）
 - **备份不要放在 `_posts/` 里**：`git add _posts/` 会连备份一起提交。写仓库外（`C:\tmp\`、桌面）
