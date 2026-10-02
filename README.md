@@ -136,7 +136,7 @@ Copy-Item -Recurse skills\export-dsh-chat $env:USERPROFILE\.agents\skills\
 | # | Skill | 说明 | 安装 |
 |---|-------|------|------|
 | 4.2 | [codex-chat](./skills/codex-chat/SKILL.md) | 通过 CDP 与 OpenAI Codex 桌面客户端通信，对应文章 4.1 | **Claude Code** → `cp -r skills/codex-chat ~/.claude/skills/` |
-| 4.3 | [publish-blog](./skills/publish-blog/SKILL.md) | 一条龙博客发布：写文章 → 更新索引 → 自动推送，对应文章 4.3 | **Claude Code** → `cp -r skills/publish-blog ~/.claude/skills/` |
+| 4.3 | [publish-blog](./skills/publish-blog/SKILL.md) | 一条龙博客发布：写文章 → 更新索引 → 自动推送，对应文章 4.3。**两个平台各一份**：`SKILL.md`（Claude Code / bash）、[`SKILL-DSH.md`](./skills/publish-blog/SKILL-DSH.md)（DSH / PowerShell） | **Claude Code** → `cp -r skills/publish-blog ~/.claude/skills/`<br>**DSH** → `Copy-Item -Recurse skills\publish-blog $env:USERPROFILE\.agents\skills\` |
 | 6.2 | [qq-messenger](./skills/qq-messenger/SKILL.md) | 通过 Codex Computer Use 控制 Windows QQ 发消息，对应文章 6.1 | **Codex** → 放入 Codex 的 skills 目录 |
 | 9.1 | [export-dsh-chat](./skills/export-dsh-chat/SKILL.md) | 导出 DSH 聊天记录为可读 JSONL（含多帧 zstd 解析算法），对应文章 9.1 | **DSH** → `Copy-Item -Recurse skills\export-dsh-chat $env:USERPROFILE\.agents\skills\` |
 
@@ -210,7 +210,8 @@ effective-pancake/
 │   │   └── scripts/
 │   │       └── codex_cdp_helper.js
 │   ├── publish-blog/
-│   │   └── SKILL.md
+│   │   ├── SKILL.md            ← Claude Code 版（bash）
+│   │   └── SKILL-DSH.md        ← DSH 版（PowerShell）
 │   ├── qq-messenger/
 │   │   └── SKILL.md
 │   └── export-dsh-chat/          ← DSH Skill（装到 ~/.agents/skills/）

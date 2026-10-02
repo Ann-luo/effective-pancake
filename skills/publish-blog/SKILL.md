@@ -219,7 +219,7 @@ curl -s https://ann-luo.github.io/effective-pancake/ | grep "文章标题"
 
 若 Actions 失败，去仓库 Actions 页看构建日志 —— `post_url` 拼错是最常见原因。
 
-## 分类清单（categories 只能取这八个值）
+## 分类清单（categories 只能取这九个值）
 
 | index.md / README 区块标题 | front matter 里的取值 |
 |---|---|
@@ -231,6 +231,7 @@ curl -s https://ann-luo.github.io/effective-pancake/ | grep "文章标题"
 | 六、Codex & Computer Use | `"Codex & Computer Use"` |
 | 七、日志 | `"日志"` |
 | 八、DSH & 插件生态 | `"DSH & 插件生态"` |
+| 九、调试与排查方法 | `"调试与排查方法"` |
 
 注意：front matter 里**不带**中文数字前缀（不带「六、」），前缀只出现在 index.md / README 的区块标题里。
 
@@ -239,7 +240,10 @@ curl -s https://ann-luo.github.io/effective-pancake/ | grep "文章标题"
 ## 仓库约定（容易踩的坑）
 
 - **正文里的一切站内链接都要能通过博客访问**（GitHub 上点得开 ≠ 博客上点得开）：
-  - 引用别的文章 → 用 `{% post_url YYYY-MM-DD-slug %}`，不要手写 `/effective-pancake/2026/07/27/xxx.html` 这种网址（URL 格式以后可能再变）
+  - 引用别的文章 → **分两种情况**：
+    - **index.md 首页导航** → 用 `{% post_url YYYY-MM-DD-slug %}`（只在博客上看，GitHub 不展示这个文件）
+    - **文章正文里互链** → 用**完整 URL** `https://ann-luo.github.io/effective-pancake/YYYY/MM/DD/slug.html`。
+      **原因**：GitHub 的 Markdown 预览不执行 Liquid，写 `post_url` 在 GitHub 上是**一行红字原文**，夹在别的蓝色链接中间就像坏了。完整 URL 两边都能点（permalink 已在 `_config.yml` 写死，不用担心失效）
   - 引用附件 → 用绝对路径 `/effective-pancake/assets/...`。**不要用 `../assets/...`** —— 文章网址是 `/2026/06/12/slug.html` 这种带层级的，`../` 会指向错误的位置
   - 引用 `skills/` 下的 skill 文件 → 用 GitHub 地址（`https://github.com/Ann-luo/effective-pancake/blob/main/skills/...`）。因为带 front matter 的 `SKILL.md` 会被 Jekyll 渲染成 `.html`，`.md` 链接会 404；不带 front matter 的则反之。直接指向 GitHub 最省事
 - **permalink 已显式设置**为 `/:year/:month/:day/:title:output_ext`，URL 里**不含 categories**。所以改分类名不会改 URL；反过来说，别把 categories 当路径用
@@ -249,3 +253,55 @@ curl -s https://ann-luo.github.io/effective-pancake/ | grep "文章标题"
 - **⚠️ Skill 类型不要搞混**：附带 Skill 时先确认是 Claude Code 还是 Codex 用的。Codex Skill 不要写 `cp -r ... ~/.claude/skills/`
 - **三个文件必须同步**：`_posts/`（front matter）+ `index.md`（导航）+ `README.md`（目录表 + 结构图，两处）
 - **推送后一定要验证**：CI 构建成功 ≠ 链接都对。构建完成后抽查新文章的网址和首页上的站内链接，死了就补一次提交
+
+---
+
+## ⚠️ 推送失败怎么办：`github.com` 会被干扰
+
+**症状**：
+
+```
+fatal: unable to access 'https://github.com/Ann-luo/effective-pancake/':
+Failed to connect to github.com:443 after 21088 ms: Could not connect to server
+```
+
+**⚠️ 别急着说"网络断了"** —— 实测同一时刻：
+
+| 目标 | 结果 |
+|---|---|
+| `api.github.com` | ✅ 200 |
+| 博客站 `ann-luo.github.io` | ✅ 200 |
+| 百度 / 其他站 | ✅ 全通 |
+| **`github.com`** | ❌ **超时** |
+
+**是 `github.com` 这一个域名被干扰**（DNS 解析到 `172.182.252.133`，
+TCP 端口能连上、但 HTTP 层超时）。**不是仓库问题、不是权限问题。**
+
+### 绕法：指定一个可用 IP 推送
+
+只对这一次命令生效，**不改系统 hosts、不用管理员权限**：
+
+```bash
+git -c http.curloptResolve="github.com:443:20.205.243.166" push origin main
+```
+
+实测可用的 IP（2026-10-02）：
+
+```
+20.205.243.166
+140.82.114.4
+140.82.121.4
+20.27.177.113
+140.82.113.4
+```
+
+### 诊断顺序（照这个来，别瞎猜）
+
+1. **先确认是不是只有 GitHub 不通**：测 `github.com` + 一个别的站
+2. **别的站通、只有 GitHub 不通** → 域名被干扰，用上面的 `curloptResolve`
+3. **`api.github.com` 也不通** → 那才是真网络问题，等网络恢复
+
+### 提交不会丢
+
+推送失败时 `git status -sb` 会显示 `ahead 1` —— **提交安全躺在本地**，
+网络恢复或换 IP 后直接再 `push` 就行，**不需要重新提交**。
