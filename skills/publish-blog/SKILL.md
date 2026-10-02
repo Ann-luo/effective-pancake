@@ -256,7 +256,7 @@ curl -s https://ann-luo.github.io/effective-pancake/ | grep "文章标题"
 
 ---
 
-## ⚠️ 推送失败怎么办：`github.com` 会被干扰
+## ⚠️ 推送失败怎么办：先开 Cloudflare WARP
 
 **症状**：
 
@@ -265,27 +265,35 @@ fatal: unable to access 'https://github.com/Ann-luo/effective-pancake/':
 Failed to connect to github.com:443 after 21088 ms: Could not connect to server
 ```
 
-**⚠️ 别急着说"网络断了"** —— 实测同一时刻：
+### ✅ 第一件事：开 Cloudflare WARP
 
-| 目标 | 结果 |
-|---|---|
-| `api.github.com` | ✅ 200 |
-| 博客站 `ann-luo.github.io` | ✅ 200 |
-| 百度 / 其他站 | ✅ 全通 |
-| **`github.com`** | ❌ **超时** |
+**这个网络环境下，推 GitHub 需要开 WARP。** 用户实测：**用 Claude Code 时也是不开 WARP 就推不上去。**
 
-**是 `github.com` 这一个域名被干扰**（DNS 解析到 `172.182.252.133`，
-TCP 端口能连上、但 HTTP 层超时）。**不是仓库问题、不是权限问题。**
+开启后 `github.com` 直连立刻恢复 —— 实测 HTTP 200 / 4.3 秒（DNS 解析的 IP 和失败时**是同一个**，
+所以不是"某个 IP 被干扰"，**就是缺 WARP**）。
 
-### 绕法：指定一个可用 IP 推送
+### 别急着判定"网络断了"
 
-只对这一次命令生效，**不改系统 hosts、不用管理员权限**：
+不开 WARP 时的实测表现，很容易让人误判：
+
+| 目标 | 不开 WARP | 开了 WARP |
+|---|---|---|
+| `api.github.com` | ✅ 200 | ✅ 200 |
+| 博客站 `ann-luo.github.io` | ✅ 200 | ✅ 200 |
+| 百度 / 其他站 | ✅ 全通 | ✅ 全通 |
+| **`github.com`** | ❌ **超时** | ✅ **200** |
+
+**只有 `github.com` 连不上 = WARP 没开**，不是网络故障、不是仓库问题、不是权限问题。
+
+### 应急绕法（确实不想开 WARP 时）
+
+只对这一次命令生效，不改系统 hosts：
 
 ```bash
 git -c http.curloptResolve="github.com:443:20.205.243.166" push origin main
 ```
 
-实测可用的 IP（2026-10-02）：
+实测可用的 IP：
 
 ```
 20.205.243.166
@@ -295,13 +303,10 @@ git -c http.curloptResolve="github.com:443:20.205.243.166" push origin main
 140.82.113.4
 ```
 
-### 诊断顺序（照这个来，别瞎猜）
-
-1. **先确认是不是只有 GitHub 不通**：测 `github.com` + 一个别的站
-2. **别的站通、只有 GitHub 不通** → 域名被干扰，用上面的 `curloptResolve`
-3. **`api.github.com` 也不通** → 那才是真网络问题，等网络恢复
+> ⚠️ 但实测发现：**开着 WARP 时，不加这个参数直连也是通的** ——
+> 所以这个绕法属于"能用，但多半不必要"，**优先开 WARP**。
 
 ### 提交不会丢
 
 推送失败时 `git status -sb` 会显示 `ahead 1` —— **提交安全躺在本地**，
-网络恢复或换 IP 后直接再 `push` 就行，**不需要重新提交**。
+开了 WARP（或换 IP）后直接再 `push` 就行，**不需要重新提交**。
